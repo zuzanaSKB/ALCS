@@ -80,18 +80,55 @@ void hashNonterminal() { //computes hashes for all nonterminals
     }
 }
 
-unsigned long long concate(unsigned int leftN, unsigned int rightN) { // computes hashes for 2 nonterminals
-    //printf("left, right: %llu %llu\n", hashN[leftN - 256], hashN[rightN - 256]);
-    //printf("powerC: %llu\n", powerC(sizeN[leftN - 256]));
-    return hashN[leftN - 256] + powerC(sizeN[leftN - 256]) * hashN[rightN - 256] % p;
+unsigned long long concate(unsigned int left, unsigned int right) { // computes hashes for 2 nonterminals or terminals
+    //printf("left, right: %llu %llu\n", hashN[left - 256], hashN[right - 256]);
+    //printf("powerC: %llu\n", powerC(sizeN[left - 256]));    
+
+    // 2 teminals
+    if (left < 256 && right < 256 ) {
+        return fingerprint(left) + c * fingerprint(right) % p;
+    }
+    // terminal and nonterminal
+    if (left < 256 && right >= 256 ) {
+        return fingerprint(left) + c * hashN[right - 256] % p;
+    }
+    // nonterminal and terminal
+    if (left >= 256 && right < 256 ) {
+        return hashN[left - 256] + powerC(sizeN[left - 256]) * fingerprint(right) % p;
+    }
+    // nonterminal and nonterminal
+    if (left >= 256 && right >= 256 ) {
+        return hashN[left - 256] + powerC(sizeN[left - 256]) * hashN[right - 256] % p;
+    }
 }
 
-/* void prefixB(float e, unsigned int X) { //given e = <0,1>, nonterminal X
-
-    for (unsigned int k = 0; pow((1/(1-e)), k) < sizeN[X-256]; k++) {
-
+unsigned long long recurrentPref (unsigned int i, unsigned int X) {
+    if (R[X-256].left < 256 && i == 1) {
+        //left is terminal
+        return fingerprint(R[X-256].left);
     }
-} */
+    if (sizeN[R[X-256].left] == i) {
+        return hashN[R[X-256].left];
+    } 
+    if (sizeN[R[X-256].left] < i) {
+        return concate(R[X-256].left, recurrentPref( i- sizeN[R[X-256].left],R[X-256].right));
+    } 
+    if (sizeN[R[X-256].left] > i) {
+        return recurrentPref( i, R[X-256].left);
+    } 
+}
+
+void prefixB(float e, unsigned int X) { //given e = <0,1>, nonterminal X
+    //compute k
+    unsigned int maxPref = 0;
+    for (unsigned int k = 0; pow((1/(1-e)), k) < sizeN[X-256]; k++) {
+        maxPref = (int) pow((1/(1-e)), k);
+    }
+    for (unsigned int i = 1; i <= maxPref; i++) {
+        recurrentPref(i, X); // where to save ?
+    }
+    
+}
 
 int main(int argc, char **argv) {
     FILE *Pf;
