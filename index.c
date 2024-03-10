@@ -49,10 +49,10 @@ void sizeNonTerminal () { //computes size of all nonterminals and store it to si
 unsigned long long fingerprint(unsigned long long terminal) {
     return terminal * c % p;
 }
-
-unsigned long long powerC (unsigned int sizeNonTerminal) {
+// powerC computes c^k
+unsigned long long powerC (unsigned int k) {
     unsigned long long result = 1;
-    for (unsigned int i = 0; i < sizeNonTerminal; i++) {
+    for (unsigned int i = 0; i < k; i++) {
         result = result * c;
     }
     return result;
