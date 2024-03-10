@@ -103,6 +103,10 @@ unsigned long long concate(unsigned int left, unsigned int right) { // computes 
 }
 
 unsigned long long recurrentPref (unsigned int i, unsigned int X) {
+    if (X < 256 && i == 1) {
+        //X is terminal
+        return fingerprint(X);
+    }
     if (R[X-256].left < 256 && i == 1) {
         //left is terminal
         return fingerprint(R[X-256].left);
