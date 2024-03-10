@@ -1,0 +1,90 @@
+==== Command line:
+ /home/zuzanita/Desktop/school/bc/old/projekt/bigrepair-master/ctph/newscanNT.x /home/zuzanita/Desktop/school/bc/ALCS/index/small_example/example -w 10 -p 100 -c
+Windows size: 10
+Stop word modulus: 100
+Total input symbols: 45
+Found 1 distinct words
+Parsing took: 0 wall clock seconds
+starting... second pass
+Sum of lenghts of dictionary words: 45
+Total number of words: 1
+Writing plain dictionary and len file
+Dictionary construction took: 0 wall clock seconds
+Generating remapped parse file
+Remapping parse file took: 0 wall clock seconds
+==== Elapsed time: 0 wall clock seconds
+malloc_count ### exiting, peak: 17,25, current: 4,00 (KBs)
+==== Command line:
+ /home/zuzanita/Desktop/school/bc/old/projekt/bigrepair-master/procdic /home/zuzanita/Desktop/school/bc/ALCS/index/small_example/example.dicz
+1 strings
+=== Preprocessing completed!
+==== Command line:
+ /home/zuzanita/Desktop/school/bc/old/projekt/bigrepair-master/largeb_repair/irepair /home/zuzanita/Desktop/school/bc/ALCS/index/small_example/example.dicz.int 3557
+IRePair succeeded
+   Original ints: 46
+   Number of rules: 8
+   Final sequence length: 12
+   Estimated output size (bytes): 25
+   Compression ratio: 49.02%
+==== Command line:
+ /home/zuzanita/Desktop/school/bc/old/projekt/bigrepair-master/largeb_repair/irepair /home/zuzanita/Desktop/school/bc/ALCS/index/small_example/example.parse 3557
+IRePair succeeded
+   Original ints: 1
+   Number of rules: 0
+   Final sequence length: 1
+   Estimated output size (bytes): 1
+   Compression ratio: inf%
+==== Command line:
+ /home/zuzanita/Desktop/school/bc/old/projekt/bigrepair-master/postproc /home/zuzanita/Desktop/school/bc/ALCS/index/small_example/example
+Prefix-Free + Repair succeeded
+  Original file size: 45 (bytes)
+  Number of rules: 18
+  Final sequence length: 1 (integers)
+  Estimated output size (bytes): 26
+  Compression ratio: 57.78%
+=== postprocessing completed!
+==== Command line:
+ /home/zuzanita/Desktop/school/bc/ALCS/bigrepair-master/ctph/newscanNT.x ./index/small_example/example -w 10 -p 100 -c
+Windows size: 10
+Stop word modulus: 100
+Total input symbols: 45
+Found 1 distinct words
+Parsing took: 0 wall clock seconds
+starting... second pass
+Sum of lenghts of dictionary words: 45
+Total number of words: 1
+Writing plain dictionary and len file
+Dictionary construction took: 0 wall clock seconds
+Generating remapped parse file
+Remapping parse file took: 0 wall clock seconds
+==== Elapsed time: 0 wall clock seconds
+malloc_count ### exiting, peak: 17,18, current: 4,00 (KBs)
+==== Command line:
+ /home/zuzanita/Desktop/school/bc/ALCS/bigrepair-master/procdic ./index/small_example/example.dicz
+1 strings
+=== Preprocessing completed!
+==== Command line:
+ /home/zuzanita/Desktop/school/bc/ALCS/bigrepair-master/largeb_repair/irepair ./index/small_example/example.dicz.int 3557
+IRePair succeeded
+   Original ints: 46
+   Number of rules: 8
+   Final sequence length: 12
+   Estimated output size (bytes): 25
+   Compression ratio: 49.02%
+==== Command line:
+ /home/zuzanita/Desktop/school/bc/ALCS/bigrepair-master/largeb_repair/irepair ./index/small_example/example.parse 3557
+IRePair succeeded
+   Original ints: 1
+   Number of rules: 0
+   Final sequence length: 1
+   Estimated output size (bytes): 1
+   Compression ratio: inf%
+==== Command line:
+ /home/zuzanita/Desktop/school/bc/ALCS/bigrepair-master/postproc ./index/small_example/example
+Prefix-Free + Repair succeeded
+  Original file size: 45 (bytes)
+  Number of rules: 18
+  Final sequence length: 1 (integers)
+  Estimated output size (bytes): 26
+  Compression ratio: 57.78%
+=== postprocessing completed!
