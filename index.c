@@ -4,8 +4,8 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <math.h>
 #include <time.h>
+#include <math.h>
 
 
 typedef struct {
@@ -23,6 +23,37 @@ unsigned int c ; // randomly chosen positive integer
 void genRanC () {
     srand(time(NULL));
     c = rand() % (1000) + 256; //generate a random number greater than 256
+    c = 780; //for test purposes
+}
+
+// hash terminals
+unsigned long long fingerprint(unsigned long long terminal) {
+    return terminal * c % p;
+}
+
+// powerC computes c^k
+unsigned long long powerC (unsigned int k) {
+    unsigned long long result = 1;
+    for (unsigned int i = 0; i < k; i++) {
+        result = result * c;
+    }
+    return result;
+}
+
+unsigned int getSize(unsigned int X) {
+    if (X < 256) {
+        return 1;
+    } else {
+        return sizeN[X-256];
+    }
+}
+
+unsigned long long getHash (unsigned int X) {
+    if (X < 256) {
+        return fingerprint(X);
+    } else {
+        return getHash(R[X-256].left) + powerC(getSize(R[X-256].left)) * getHash(R[X-256].right) % p;
+    }
 }
 
 void sizeNonTerminal () { //computes size of all nonterminals and store it to sizeN
@@ -45,38 +76,10 @@ void sizeNonTerminal () { //computes size of all nonterminals and store it to si
     }
 }
 
-// hash terminals
-unsigned long long fingerprint(unsigned long long terminal) {
-    return terminal * c % p;
-}
-// powerC computes c^k
-unsigned long long powerC (unsigned int k) {
-    unsigned long long result = 1;
-    for (unsigned int i = 0; i < k; i++) {
-        result = result * c;
-    }
-    return result;
-}
-
 void hashNonterminal() { //computes hashes for all nonterminals
     hashN = (void *)malloc(sizeRules * sizeof(unsigned long long));
     for (unsigned int i = 0; i < sizeRules; i++) {
-        // 2 teminals
-        if (R[i].left < 256 && R[i].right < 256 ) {
-            hashN[i] = fingerprint(R[i].left) + c * fingerprint(R[i].right) % p;
-        }
-        // terminal and nonterminal
-        if (R[i].left < 256 && R[i].right >= 256 ) {
-            hashN[i] = fingerprint(R[i].left) + c * hashN[R[i].right - 256] % p;
-        }
-        // nonterminal and terminal
-        if (R[i].left >= 256 && R[i].right < 256 ) {
-            hashN[i] = hashN[R[i].left - 256] + powerC(sizeN[R[i].left - 256]) * fingerprint(R[i].right) % p;
-        }
-        // nonterminal and nonterminal
-        if (R[i].left >= 256 && R[i].right >= 256 ) {
-            hashN[i] = hashN[R[i].left - 256] + powerC(sizeN[R[i].left - 256]) * hashN[R[i].right - 256] % p;
-        }
+        hashN[i] = getHash(i+256);
     }
 }
 
@@ -84,22 +87,8 @@ unsigned long long concate(unsigned int left, unsigned int right) { // computes 
     //printf("left, right: %llu %llu\n", hashN[left - 256], hashN[right - 256]);
     //printf("powerC: %llu\n", powerC(sizeN[left - 256]));    
 
-    // 2 teminals
-    if (left < 256 && right < 256 ) {
-        return fingerprint(left) + c * fingerprint(right) % p;
-    }
-    // terminal and nonterminal
-    if (left < 256 && right >= 256 ) {
-        return fingerprint(left) + c * hashN[right - 256] % p;
-    }
-    // nonterminal and terminal
-    if (left >= 256 && right < 256 ) {
-        return hashN[left - 256] + powerC(sizeN[left - 256]) * fingerprint(right) % p;
-    }
-    // nonterminal and nonterminal
-    if (left >= 256 && right >= 256 ) {
-        return hashN[left - 256] + powerC(sizeN[left - 256]) * hashN[right - 256] % p;
-    }
+    return getHash(left) + powerC(getSize(left)) * getHash(right) % p;
+
 }
 
 unsigned long long recurrentPref (unsigned int i, unsigned int X) {
@@ -122,17 +111,22 @@ unsigned long long recurrentPref (unsigned int i, unsigned int X) {
     } 
 }
 
-void prefixB(float e, unsigned int X) { //given e = <0,1>, nonterminal X
+/* unsigned long long * prefixB(float e, unsigned int X) { //given e = <0,1>, nonterminal X
+    unsigned long long *hashP; //hashes for prefix block
+
     //compute k
     unsigned int maxPref = 0;
     for (unsigned int k = 0; pow((1/(1-e)), k) < sizeN[X-256]; k++) {
         maxPref = (int) pow((1/(1-e)), k);
     }
+    hashP = (void *)malloc(maxPref * sizeof(unsigned long long));
     for (unsigned int i = 1; i <= maxPref; i++) {
-        recurrentPref(i, X); // where to save ?
+        hashP[i-1] = recurrentPref(i, X); //save into hashtable later
+        //test
+        printf("prefix of length: %u hash: %llu\n", i, hashP[i-1]);
     }
-    
-}
+    return hashP;
+} */
 
 int main(int argc, char **argv) {
     FILE *Pf;
@@ -207,7 +201,15 @@ int main(int argc, char **argv) {
     //print result of hashN
     printf("hashN: %llu\n", hashN[5]);
     if (h == hashN[5]) {
-        printf("test succeeded\n");
+        printf("test2 succeeded\n");
+    } else {
+        printf("E stupido!!!\n");
+    }
+
+    //test4: getHash
+    unsigned long long h2 = getHash(261);
+    if (h2 == hashN[5]) {
+        printf("test4 succeeded\n");
     } else {
         printf("E stupido!!!\n");
     }
@@ -216,11 +218,16 @@ int main(int argc, char **argv) {
     /* for (unsigned int i = 1; i <= sizeRules; i++) {
         printf ("%u %llu\n", i, hashN[i-1]);
     } */
+
+    //test5: prefixB
+    //unsigned long long *hashP = prefixB(e, 261);
+
     
     //free memory
     free(R);
     free(sizeN);
     free(hashN);
+    //free(hashP);
     fclose(Pf);
     return 0;
 }
