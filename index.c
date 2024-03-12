@@ -91,27 +91,35 @@ unsigned long long concate(unsigned int left, unsigned int right) { // computes 
 
 }
 
+//returns first i hashes of X <=> computes S[1...n]
 unsigned long long recurrentPref (unsigned int i, unsigned int X) {
-    if (X < 256 && i == 1) {
-        //X is terminal
-        return fingerprint(X);
+    if (getSize(X) == i) {
+        return getHash(X);
     }
-    if (R[X-256].left < 256 && i == 1) {
-        //left is terminal
-        return fingerprint(R[X-256].left);
-    }
-    if (sizeN[R[X-256].left] == i) {
-        return hashN[R[X-256].left];
+    //test purposes
+    printf("reccurentPref i: %u X: %u\n", i, X);
+    printf("reccurentPref size X.left: %u\n", getSize(R[X-256].left));
+
+    if (getSize(R[X-256].left) == i) {
+        //exact left subtree
+        return getHash(R[X-256].left);
     } 
-    if (sizeN[R[X-256].left] < i) {
-        return concate(R[X-256].left, recurrentPref( i- sizeN[R[X-256].left],R[X-256].right));
+    if (getSize(R[X-256].left) < i) {
+        //all left subtree + something from right subtree
+        //return concate(R[X-256].left, recurrentPref( i- getSize(R[X-256].left),R[X-256].right));
+
+        //i know this is awful, ... but it works and my brain doesnt work anymore:
+        return getHash(R[X-256].left) + powerC(getSize(R[X-256].left)) * 
+                recurrentPref( i- getSize(R[X-256].left),R[X-256].right) % p;
     } 
-    if (sizeN[R[X-256].left] > i) {
+    if (getSize(R[X-256].left) > i) {
+        //deeper to the left subtree
         return recurrentPref( i, R[X-256].left);
     } 
 }
 
-/* unsigned long long * prefixB(float e, unsigned int X) { //given e = <0,1>, nonterminal X
+//computes all prefix blocks of nonterminal X
+unsigned long long * prefixB(float e, unsigned int X) { //given e = <0,1>, nonterminal X
     unsigned long long *hashP; //hashes for prefix block
 
     //compute k
@@ -122,11 +130,11 @@ unsigned long long recurrentPref (unsigned int i, unsigned int X) {
     hashP = (void *)malloc(maxPref * sizeof(unsigned long long));
     for (unsigned int i = 1; i <= maxPref; i++) {
         hashP[i-1] = recurrentPref(i, X); //save into hashtable later
-        //test
+        //test purpose
         printf("prefix of length: %u hash: %llu\n", i, hashP[i-1]);
     }
     return hashP;
-} */
+}
 
 int main(int argc, char **argv) {
     FILE *Pf;
@@ -215,12 +223,16 @@ int main(int argc, char **argv) {
     }
     
     //test3: print all hashes of nontermonals
-    /* for (unsigned int i = 1; i <= sizeRules; i++) {
+    for (unsigned int i = 1; i <= sizeRules; i++) {
         printf ("%u %llu\n", i, hashN[i-1]);
-    } */
+    }
 
     //test5: prefixB
-    //unsigned long long *hashP = prefixB(e, 261);
+    unsigned long long *hashP = prefixB(e, 261);
+
+    //test6.: reccurentPref
+    unsigned long long r = recurrentPref(2, 261);
+    printf("recurrentPref r: %llu\n", r);
 
     
     //free memory
