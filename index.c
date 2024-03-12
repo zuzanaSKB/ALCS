@@ -223,9 +223,9 @@ int main(int argc, char **argv) {
     }
     
     //test3: print all hashes of nontermonals
-    for (unsigned int i = 1; i <= sizeRules; i++) {
+    /* for (unsigned int i = 1; i <= sizeRules; i++) {
         printf ("%u %llu\n", i, hashN[i-1]);
-    }
+    } */
 
     //test5: prefixB
     unsigned long long *hashP = prefixB(e, 261);
