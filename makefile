@@ -1,5 +1,10 @@
 CC=gcc
 CFLAGS=-lm
 
-index:  index.c
-	$(CC) index.c -o index $(CFLAGS)
+make all: grammar index
+
+grammar: grammar.c grammar.h
+	$(CC) grammar.c -c -o grammar.o $(CFLAGS)
+
+index:  index.c grammar.h
+	$(CC) index.c grammar.o -o index $(CFLAGS)
