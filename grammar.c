@@ -5,21 +5,23 @@ unsigned int sizeRules;
 unsigned long long *hashN;
 unsigned int *sizeN;
 
-const unsigned int c = 780;
+const unsigned long long c = 28222; //generated from random.org
+const unsigned long long cInv = 1738410520411018574;
 const unsigned long long p = (1ULL << 61) - 1;
+
+// power computes c^k
+unsigned long long power (unsigned long long a, unsigned int k) {
+    unsigned long long result = 1;
+    for (unsigned int i = 0; i < k; i++) {
+        result = result * a;
+    }
+    return result;
+}
+
 
 // hash terminals
 unsigned long long fingerprint(unsigned long long terminal) {
     return terminal * c % p;
-}
-
-// powerC computes c^k
-unsigned long long powerC (unsigned int k) {
-    unsigned long long result = 1;
-    for (unsigned int i = 0; i < k; i++) {
-        result = result * c;
-    }
-    return result;
 }
 
 unsigned int getSize(unsigned int X) {
@@ -34,7 +36,7 @@ unsigned long long getHash (unsigned int X) {
     if (X < 256) {
         return fingerprint(X);
     } else {
-        return getHash(R[X-256].left) + powerC(getSize(R[X-256].left)) * getHash(R[X-256].right) % p;
+        return getHash(R[X-256].left) + power(c, getSize(R[X-256].left)) * getHash(R[X-256].right) % p;
     }
 }
 
@@ -59,16 +61,16 @@ void hashNonterminal() { //computes hashes for all nonterminals
 
 unsigned long long concate(unsigned int left, unsigned int right) { // computes hashes for 2 nonterminals or terminals
     //printf("left, right: %llu %llu\n", hashN[left - 256], hashN[right - 256]);
-    //printf("powerC: %llu\n", powerC(sizeN[left - 256]));    
+    //printf("power: %llu\n", power(c, sizeN[left - 256]));    
 
-    return getHash(left) + powerC(getSize(left)) * getHash(right) % p;
+    return getHash(left) + power(c, getSize(left)) * getHash(right) % p;
 
 }
 
 //returns first i hashes of X <=> computes S[1...n]
 unsigned long long recurrentPref (unsigned int i, unsigned int X) {
     if (getSize(X) == i) {
-        return getHash(X);
+        return getHash(X); 
     }
     //test purposes
     printf("reccurentPref i: %u X: %u\n", i, X);
@@ -83,13 +85,18 @@ unsigned long long recurrentPref (unsigned int i, unsigned int X) {
         //return concate(R[X-256].left, recurrentPref( i- getSize(R[X-256].left),R[X-256].right));
 
         //i know this is awful, ... but it works and my brain doesnt work anymore:
-        return getHash(R[X-256].left) + powerC(getSize(R[X-256].left)) * 
+        return getHash(R[X-256].left) + power(c, getSize(R[X-256].left)) * 
                 recurrentPref( i- getSize(R[X-256].left),R[X-256].right) % p;
     } 
     if (getSize(R[X-256].left) > i) {
         //deeper to the left subtree
         return recurrentPref( i, R[X-256].left);
     } 
+}
+
+unsigned long long hashSubstringToI(unsigned int i) {
+    printf ("hashSubstring root: %u\n", sizeRules+256-1);
+    return recurrentPref(i, sizeRules + 256 -1);
 }
 
 //computes all prefix blocks of nonterminal X
@@ -108,6 +115,21 @@ unsigned long long * prefixB(float e, unsigned int X) { //given e = <0,1>, nonte
         printf("prefix of length: %u hash: %llu\n", i, hashP[i-1]);
     }
     return hashP;
+}
+
+//computes hash of S[i..j]
+unsigned long long hashSubstring(unsigned int i, unsigned int j) {
+    if (i < 1 || j < 1 || i > sizeN[sizeRules-1] || j > sizeN[sizeRules-1]) {
+        printf("Error! Cannot compute hash of substring, wrong arguments.\n");
+        return 0;
+    }
+    if (i == 1) {
+        return hashSubstringToI(j);
+    }
+    unsigned long long hashI = hashSubstringToI(i-1); //hash of S[1..i]
+    unsigned long long hashJ = hashSubstringToI(j); //hash of S[1..j]
+    
+    return (hashJ - hashI) * power(cInv, i-1) % p;
 }
 
 void readInput(int argc, char **argv) {
@@ -163,6 +185,7 @@ void readInput(int argc, char **argv) {
 
     sizeNonTerminal();
     hashNonterminal();
+    
 
     ////////// some unit tests //////////
     //test1: read from .plaintslp
@@ -181,7 +204,7 @@ void readInput(int argc, char **argv) {
     //test2: comparing concate & hashN
     //print prime, c
     printf("prime: %llu\n", p);
-    printf("c: %u\n", c);
+    printf("c: %llu\n", c);
     unsigned long long h = concate(257,258);
     //print result of concate
     printf("concate: %llu\n", h);
@@ -207,13 +230,31 @@ void readInput(int argc, char **argv) {
     }
 
     //test5: prefixB
-    unsigned long long *hashP = prefixB(e, 261);
+    //unsigned long long *hashP = prefixB(e, 261);
 
     //test6.: reccurentPref
-    unsigned long long r = recurrentPref(2, 261);
+    /* unsigned long long r = recurrentPref(2, 261);
     printf("recurrentPref r: %llu\n", r);
+    */
+    //test7: hashSubstringToI
+    unsigned int i = 3;
+    unsigned long long hSub = hashSubstringToI(i);
+    printf("hashSubstringToI i: %u hash: %llu\n", i, hSub);
 
-    free(hashP);
+    //test7.5: cInv
+    unsigned long long result = (c*cInv) % p;
+    printf("test7.5: %llu * %llu mod %llu should equal 1: %llu\n", c, cInv, p, result);
+
+    //test8: hashSubstring S[i..j]
+    unsigned long long hS = hashSubstring(2, 3);
+    printf("test8 hash: %llu\n", hS);
+    if (hS == getHash(256)){
+        printf("test8: succeeded!\n");
+    } else {
+        printf("test8: retardo e stupido!\n");
+    }
+
+    //free(hashP);
     fclose(Pf);
 
 }
