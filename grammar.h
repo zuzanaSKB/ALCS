@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
+#include <inttypes.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -13,21 +15,21 @@ typedef struct {
 
 extern Tpair *R; // rules
 extern unsigned int sizeRules;
-extern unsigned long long *hashN; //hashes for all nonterminals
+extern uint64_t *hashN; //hashes for all nonterminals
 extern unsigned int *sizeN; //size of each nonterminal
 
-extern const unsigned long long p; // fixed prime number
-extern const unsigned long long c; // randomly chosen positive integer
-extern const unsigned long long cInv; //inverse number to c according to mod p
+extern const uint64_t p; // fixed prime number
+extern const uint64_t c; // randomly chosen positive integer
+extern const uint64_t cInv; //inverse number to c according to mod p
 
-unsigned long long fingerprint(unsigned long long terminal);
-unsigned long long power(unsigned long long a, unsigned int k);
+uint64_t fingerprint(uint64_t terminal);
+uint64_t power(uint64_t a, unsigned int k);
 unsigned int getSize(unsigned int X);
-unsigned long long getHash(unsigned int X);
+uint64_t getHash(unsigned int X);
 void sizeNonTerminal();
 void hashNonterminal();
-unsigned long long concate(unsigned int left, unsigned int right);
-unsigned long long hashSubstringToI(unsigned int i);
-unsigned long long *prefixB(float e, unsigned int X);
-unsigned long long hashSubstring(unsigned int i, unsigned int j);
+uint64_t concate(unsigned int left, unsigned int right);
+uint64_t hashSubstringToI(unsigned int i);
+uint64_t *prefixB(float e, unsigned int X);
+uint64_t hashSubstring(unsigned int i, unsigned int j);
 void readInput(int argc, char **argv);

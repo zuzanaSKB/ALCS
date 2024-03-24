@@ -2,25 +2,44 @@
 
 Tpair *R;
 unsigned int sizeRules;
-unsigned long long *hashN;
+uint64_t *hashN;
 unsigned int *sizeN;
 
-const unsigned long long c = 28222; //generated from random.org
-const unsigned long long cInv = 1738410520411018574;
-const unsigned long long p = (1ULL << 61) - 1;
+const uint64_t c = 28222; //generated from random.org
+const uint64_t cInv = 1738410520411018574;
+const uint64_t p = (1ULL << 61) - 1;
+
+//=============================================================================
+//function mul_mod_mersenne is from https://github.com/dominikkempa/lz77-to-slp/blob/main/src/karp_rabin_hashing.cpp#L55
+uint64_t mul_mod_mersenne(
+    const uint64_t a,
+    const uint64_t b,
+    const uint64_t k) {
+  const uint64_t p = ((uint64_t)1 << k) - 1;
+  __extension__ const unsigned __int128 ab =
+    (unsigned __int128)a *
+    (unsigned __int128)b;
+  uint64_t lo = (uint64_t)ab;
+  const uint64_t hi = (ab >> 64);
+  lo = (lo & p) + ((lo >> k) + (hi << (64 - k)));
+  lo = (lo & p) + (lo >> k);
+  return lo == p ? 0 : lo;
+}
+
+//=============================================================================
 
 // power computes c^k
-unsigned long long power (unsigned long long a, unsigned int k) {
-    unsigned long long result = 1;
+uint64_t power (uint64_t a, unsigned int k) {
+    uint64_t result = 1;
     for (unsigned int i = 0; i < k; i++) {
-        result = result * a;
+        result = mul_mod_mersenne(result, a, 61);
     }
     return result;
 }
 
 
 // hash terminals
-unsigned long long fingerprint(unsigned long long terminal) {
+uint64_t fingerprint(uint64_t terminal) {
     return terminal * c % p;
 }
 
@@ -32,7 +51,7 @@ unsigned int getSize(unsigned int X) {
     }
 }
 
-unsigned long long getHash (unsigned int X) {
+uint64_t getHash (unsigned int X) {
     if (X < 256) {
         return fingerprint(X);
     } else {
@@ -53,22 +72,22 @@ void sizeNonTerminal () { //computes size of all nonterminals and store it to si
 }
 
 void hashNonterminal() { //computes hashes for all nonterminals
-    hashN = (void *)malloc(sizeRules * sizeof(unsigned long long));
+    hashN = (void *)malloc(sizeRules * sizeof(uint64_t));
     for (unsigned int i = 0; i < sizeRules; i++) {
         hashN[i] = getHash(i+256);
     }
 }
 
-unsigned long long concate(unsigned int left, unsigned int right) { // computes hashes for 2 nonterminals or terminals
-    //printf("left, right: %llu %llu\n", hashN[left - 256], hashN[right - 256]);
-    //printf("power: %llu\n", power(c, sizeN[left - 256]));    
+uint64_t concate(unsigned int left, unsigned int right) { // computes hashes for 2 nonterminals or terminals
+    //printf("left, right: %" PRIu64 " %" PRIu64 "\n", hashN[left - 256], hashN[right - 256]);
+    //printf("power: %" PRIu64 "\n", power(c, sizeN[left - 256]));    
 
     return getHash(left) + power(c, getSize(left)) * getHash(right) % p;
 
 }
 
 //returns first i hashes of X <=> computes S[1...n]
-unsigned long long recurrentPref (unsigned int i, unsigned int X) {
+uint64_t recurrentPref (unsigned int i, unsigned int X) {
     if (getSize(X) == i) {
         return getHash(X); 
     }
@@ -94,31 +113,13 @@ unsigned long long recurrentPref (unsigned int i, unsigned int X) {
     } 
 }
 
-unsigned long long hashSubstringToI(unsigned int i) {
+uint64_t hashSubstringToI(unsigned int i) {
     printf ("hashSubstring root: %u\n", sizeRules+256-1);
     return recurrentPref(i, sizeRules + 256 -1);
 }
 
-//computes all prefix blocks of nonterminal X
-unsigned long long * prefixB(float e, unsigned int X) { //given e = <0,1>, nonterminal X
-    unsigned long long *hashP; //hashes for prefix block
-
-    //compute k
-    unsigned int maxPref = 0;
-    for (unsigned int k = 0; pow((1/(1-e)), k) < sizeN[X-256]; k++) {
-        maxPref = (int) pow((1/(1-e)), k);
-    }
-    hashP = (void *)malloc(maxPref * sizeof(unsigned long long));
-    for (unsigned int i = 1; i <= maxPref; i++) {
-        hashP[i-1] = recurrentPref(i, X); //save into hashtable later
-        //test purpose
-        printf("prefix of length: %u hash: %llu\n", i, hashP[i-1]);
-    }
-    return hashP;
-}
-
 //computes hash of S[i..j]
-unsigned long long hashSubstring(unsigned int i, unsigned int j) {
+uint64_t hashSubstring(unsigned int i, unsigned int j) {
     if (i < 1 || j < 1 || i > sizeN[sizeRules-1] || j > sizeN[sizeRules-1]) {
         printf("Error! Cannot compute hash of substring, wrong arguments.\n");
         return 0;
@@ -126,11 +127,32 @@ unsigned long long hashSubstring(unsigned int i, unsigned int j) {
     if (i == 1) {
         return hashSubstringToI(j);
     }
-    unsigned long long hashI = hashSubstringToI(i-1); //hash of S[1..i]
-    unsigned long long hashJ = hashSubstringToI(j); //hash of S[1..j]
+    uint64_t hashI = hashSubstringToI(i-1); //hash of S[1..i]
+    uint64_t hashJ = hashSubstringToI(j); //hash of S[1..j]
     
-    return (hashJ - hashI) * power(cInv, i-1) % p;
+    return mul_mod_mersenne(hashJ - hashI, power(cInv, i-1), 61);
+    //return (hashJ - hashI) * power(cInv, i-1) % p;
 }
+
+//computes all prefix blocks of nonterminal X
+uint64_t * prefixB(float e, unsigned int X) { //given e = <0,1>, nonterminal X
+    uint64_t *hashP; //hashes for prefix block
+
+    //compute k
+    unsigned int maxPref = 0;
+    for (unsigned int k = 0; pow((1/(1-e)), k) < sizeN[X-256]; k++) {
+        maxPref = (int) pow((1/(1-e)), k);
+    }
+    hashP = (void *)malloc(maxPref * sizeof(uint64_t));
+    for (unsigned int i = 1; i <= maxPref; i++) {
+        hashP[i-1] = recurrentPref(i, X); //save into hashtable later
+        //test purpose
+        printf("prefix of length: %u hash: %" PRIu64 "\n", i, hashP[i-1]);
+    }
+    return hashP;
+}
+
+
 
 void readInput(int argc, char **argv) {
     FILE *Pf;
@@ -203,13 +225,13 @@ void readInput(int argc, char **argv) {
 
     //test2: comparing concate & hashN
     //print prime, c
-    printf("prime: %llu\n", p);
-    printf("c: %llu\n", c);
-    unsigned long long h = concate(257,258);
+    printf("prime: %" PRIu64 "\n", p);
+    printf("c: %" PRIu64 "\n", c);
+    uint64_t h = concate(257,258);
     //print result of concate
-    printf("concate: %llu\n", h);
+    printf("concate: %" PRIu64 "\n", h);
     //print result of hashN
-    printf("hashN: %llu\n", hashN[5]);
+    printf("hashN: %" PRIu64 "\n", hashN[5]);
     if (h == hashN[5]) {
         printf("test2 succeeded\n");
     } else {
@@ -217,7 +239,7 @@ void readInput(int argc, char **argv) {
     }
 
     //test4: getHash
-    unsigned long long h2 = getHash(261);
+    uint64_t h2 = getHash(261);
     if (h2 == hashN[5]) {
         printf("test4 succeeded\n");
     } else {
@@ -226,28 +248,28 @@ void readInput(int argc, char **argv) {
     
     //test3: print all hashes of nontermonals
     for (unsigned int i = 1; i <= sizeRules; i++) {
-        printf ("%u %llu\n", i, hashN[i-1]);
+        printf ("%u %" PRIu64 "\n", i, hashN[i-1]);
     }
 
     //test5: prefixB
-    //unsigned long long *hashP = prefixB(e, 261);
+    //uint64_t *hashP = prefixB(e, 261);
 
     //test6.: reccurentPref
-    /* unsigned long long r = recurrentPref(2, 261);
-    printf("recurrentPref r: %llu\n", r);
+    /* uint64_t r = recurrentPref(2, 261);
+    printf("recurrentPref r: %" PRIu64 "\n", r);
     */
     //test7: hashSubstringToI
     unsigned int i = 3;
-    unsigned long long hSub = hashSubstringToI(i);
-    printf("hashSubstringToI i: %u hash: %llu\n", i, hSub);
+    uint64_t hSub = hashSubstringToI(i);
+    printf("hashSubstringToI i: %u hash: %" PRIu64 "\n", i, hSub);
 
     //test7.5: cInv
-    unsigned long long result = (c*cInv) % p;
-    printf("test7.5: %llu * %llu mod %llu should equal 1: %llu\n", c, cInv, p, result);
+    uint64_t result = mul_mod_mersenne(c, cInv, 61);
+    printf("test7.5: %" PRIu64 " * %" PRIu64 " mod %" PRIu64 " should equal 1: %" PRIu64 "\n", c, cInv, p, result);
 
     //test8: hashSubstring S[i..j]
-    unsigned long long hS = hashSubstring(2, 3);
-    printf("test8 hash: %llu\n", hS);
+    uint64_t hS = hashSubstring(2, 3);
+    printf("test8 hash: %" PRIu64 "\n", hS);
     if (hS == getHash(256)){
         printf("test8: succeeded!\n");
     } else {

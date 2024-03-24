@@ -1,3 +1,6 @@
+//you can compile this code as "gcc inverseNum.c -o inverseNum -lgmp"
+
+
 #include <stdio.h>
 #include <gmp.h>
 
@@ -31,9 +34,7 @@ int main() {
             printf("Inverse computation error\n");
         }
         mpz_clear(res);
-    }
-
-    
+    }   
     
 
 
