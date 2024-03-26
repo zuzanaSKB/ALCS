@@ -4,10 +4,12 @@ Tpair *R;
 unsigned int sizeRules;
 uint64_t *hashN;
 unsigned int *sizeN;
+unsigned int *indicesOfExpX;
 
-const uint64_t c = 28222; //generated from random.org
-const uint64_t cInv = 1738410520411018574;
+const uint64_t c = 28222; //random number generated from random.org
+const uint64_t cInv = 1738410520411018574; //inverse number to c in mod p, computed in inverseNum.c
 const uint64_t p = (1ULL << 61) - 1;
+const unsigned int offset = 256;
 
 //=============================================================================
 //function mul_mod_mersenne is from https://github.com/dominikkempa/lz77-to-slp/blob/main/src/karp_rabin_hashing.cpp#L55
@@ -44,18 +46,18 @@ uint64_t fingerprint(uint64_t terminal) {
 }
 
 unsigned int getSize(unsigned int X) {
-    if (X < 256) {
+    if (X < offset) {
         return 1;
     } else {
-        return sizeN[X-256];
+        return sizeN[X-offset];
     }
 }
 
 uint64_t getHash (unsigned int X) {
-    if (X < 256) {
+    if (X < offset) {
         return fingerprint(X);
     } else {
-        return getHash(R[X-256].left) + power(c, getSize(R[X-256].left)) * getHash(R[X-256].right) % p;
+        return getHash(R[X-offset].left) + power(c, getSize(R[X-offset].left)) * getHash(R[X-offset].right) % p;
     }
 }
 
@@ -74,13 +76,13 @@ void sizeNonTerminal () { //computes size of all nonterminals and store it to si
 void hashNonterminal() { //computes hashes for all nonterminals
     hashN = (void *)malloc(sizeRules * sizeof(uint64_t));
     for (unsigned int i = 0; i < sizeRules; i++) {
-        hashN[i] = getHash(i+256);
+        hashN[i] = getHash(i+offset);
     }
 }
 
 uint64_t concate(unsigned int left, unsigned int right) { // computes hashes for 2 nonterminals or terminals
-    //printf("left, right: %" PRIu64 " %" PRIu64 "\n", hashN[left - 256], hashN[right - 256]);
-    //printf("power: %" PRIu64 "\n", power(c, sizeN[left - 256]));    
+    //printf("left, right: %" PRIu64 " %" PRIu64 "\n", hashN[left - offset], hashN[right - offset]);
+    //printf("power: %" PRIu64 "\n", power(c, sizeN[left - offset]));    
 
     return getHash(left) + power(c, getSize(left)) * getHash(right) % p;
 
@@ -93,29 +95,29 @@ uint64_t recurrentPref (unsigned int i, unsigned int X) {
     }
     //test purposes
     printf("reccurentPref i: %u X: %u\n", i, X);
-    printf("reccurentPref size X.left: %u\n", getSize(R[X-256].left));
+    printf("reccurentPref size X.left: %u\n", getSize(R[X-offset].left));
 
-    if (getSize(R[X-256].left) == i) {
+    if (getSize(R[X-offset].left) == i) {
         //exact left subtree
-        return getHash(R[X-256].left);
+        return getHash(R[X-offset].left);
     } 
-    if (getSize(R[X-256].left) < i) {
+    if (getSize(R[X-offset].left) < i) {
         //all left subtree + something from right subtree
-        //return concate(R[X-256].left, recurrentPref( i- getSize(R[X-256].left),R[X-256].right));
+        //return concate(R[X-offset].left, recurrentPref( i- getSize(R[X-offset].left),R[X-offset].right));
 
         //i know this is awful, ... but it works and my brain doesnt work anymore:
-        return getHash(R[X-256].left) + power(c, getSize(R[X-256].left)) * 
-                recurrentPref( i- getSize(R[X-256].left),R[X-256].right) % p;
+        return getHash(R[X-offset].left) + power(c, getSize(R[X-offset].left)) * 
+                recurrentPref( i- getSize(R[X-offset].left),R[X-offset].right) % p;
     } 
-    if (getSize(R[X-256].left) > i) {
+    if (getSize(R[X-offset].left) > i) {
         //deeper to the left subtree
-        return recurrentPref( i, R[X-256].left);
+        return recurrentPref( i, R[X-offset].left);
     } 
 }
 
 uint64_t hashSubstringToI(unsigned int i) {
-    printf ("hashSubstring root: %u\n", sizeRules+256-1);
-    return recurrentPref(i, sizeRules + 256 -1);
+    printf ("hashSubstring root: %u\n", sizeRules+offset-1);
+    return recurrentPref(i, sizeRules + offset -1);
 }
 
 //computes hash of S[i..j]
@@ -140,7 +142,7 @@ uint64_t * prefixB(float e, unsigned int X) { //given e = <0,1>, nonterminal X
 
     //compute k
     unsigned int maxPref = 0;
-    for (unsigned int k = 0; pow((1/(1-e)), k) < sizeN[X-256]; k++) {
+    for (unsigned int k = 0; pow((1/(1-e)), k) < sizeN[X-offset]; k++) {
         maxPref = (int) pow((1/(1-e)), k);
     }
     hashP = (void *)malloc(maxPref * sizeof(uint64_t));
@@ -152,7 +154,36 @@ uint64_t * prefixB(float e, unsigned int X) { //given e = <0,1>, nonterminal X
     return hashP;
 }
 
+//returns array of indices of starts of exp(X)
+void computeIndicesOfExpX(unsigned int X, unsigned int pos) {
+    if (X < offset) {
+        if(indicesOfExpX[X] == 0){
+            indicesOfExpX[X] = pos;
+        }
+    } else {
+        if(indicesOfExpX[X] == 0){
+            indicesOfExpX[X] = pos;
+        }
+        computeIndicesOfExpX(R[X-offset].left, pos);
+        computeIndicesOfExpX(R[X-offset].right, pos + getSize(R[X-offset].left));
+    }
+}
 
+//computes hashes of pref and suf blocks
+uint64_t** hashBlock(float e){
+    //compute L
+    unsigned int sizeL = 0;
+    unsigned int *L;
+    printf("hashBlock:\n");
+    for (unsigned int k = 0; pow((1/(1-e)), k) < getSize(sizeRules+offset-1); k++) {
+        sizeL ++;
+        L = (void *)calloc(sizeL, sizeof(unsigned int));
+        L[sizeL - 1] = (int) pow((1/(1-e)), k);
+        printf("L[%u] = %u\n", k, L[sizeL - 1]);
+    }
+
+    return 0;
+}
 
 void readInput(int argc, char **argv) {
     FILE *Pf;
@@ -171,6 +202,7 @@ void readInput(int argc, char **argv) {
                 argv[0]);
         exit(1);
     }
+
 
     // read .plainslp file
     strcpy(fname, argv[1]);
@@ -207,6 +239,13 @@ void readInput(int argc, char **argv) {
 
     sizeNonTerminal();
     hashNonterminal();
+
+    //initialization & computing of array with first occurencies of exp(X) of all terminals and nonterminals
+    indicesOfExpX = (void *)calloc((sizeRules+offset), sizeof(unsigned int));
+    computeIndicesOfExpX(sizeRules + offset-1, 1);
+
+
+    uint64_t **blocks = hashBlock(e);
     
 
     ////////// some unit tests //////////
@@ -270,10 +309,18 @@ void readInput(int argc, char **argv) {
     //test8: hashSubstring S[i..j]
     uint64_t hS = hashSubstring(2, 3);
     printf("test8 hash: %" PRIu64 "\n", hS);
-    if (hS == getHash(256)){
+    if (hS == getHash(offset)){
         printf("test8: succeeded!\n");
     } else {
         printf("test8: retardo e stupido!\n");
+    }
+
+    //test9: computeIndicesOfExpX
+    printf("test9: computeIndicesOfExpX\n");
+    for(unsigned int i = 0; i < sizeRules+offset; i++) {
+        if(indicesOfExpX[i] != 0) {
+            printf("start of exp(%u) : %u\n", i, indicesOfExpX[i]);
+        }
     }
 
     //free(hashP);

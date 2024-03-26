@@ -8,6 +8,7 @@ int main(int argc, char **argv) {
     free(R);
     free(sizeN);
     free(hashN);
+    free(indicesOfExpX);
     return 0;
 }
 
