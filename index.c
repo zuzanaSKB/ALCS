@@ -6,6 +6,8 @@ int main(int argc, char **argv) {
     
     //free memory
     free(R);
+    free(isPrefBlock);
+    free(isSufBlock);
     free(sizeN);
     free(hashN);
     free(indicesOfExpX);

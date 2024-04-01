@@ -13,7 +13,14 @@ typedef struct {
     unsigned int left, right; 
 } Tpair;
 
+typedef struct {
+    uint64_t key;
+    unsigned int value; 
+} THashPair;
+
 extern Tpair *R; // rules
+extern THashPair *isPrefBlock;
+extern THashPair *isSufBlock;
 extern unsigned int sizeRules;
 extern uint64_t *hashN; //hashes for all nonterminals
 extern unsigned int *sizeN; //size of each nonterminal
@@ -37,5 +44,5 @@ uint64_t hashSubstringToI(unsigned int i);
 uint64_t hashSubstring(unsigned int i, unsigned int j);
 uint64_t *prefixB(float e, unsigned int X);
 void computeIndicesOfExpX(unsigned int X, unsigned int pos);
-uint64_t** hashBlock(float e);
+void hashBlock(float e);
 void readInput(int argc, char **argv);
