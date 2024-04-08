@@ -26,6 +26,7 @@ extern uint64_t *hashN; //hashes for all nonterminals
 extern unsigned int *sizeN; //size of each nonterminal
 extern unsigned int *indicesOfExpX; //indices of first occurence of exp(X)
 
+extern float e; //from input
 extern const uint64_t c; // randomly chosen positive integer
 extern const uint64_t cInv; //inverse number to c according to mod p
 extern const uint64_t p; // fixed prime number

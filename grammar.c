@@ -8,6 +8,7 @@ uint64_t *hashN;
 unsigned int *sizeN;
 unsigned int *indicesOfExpX;
 
+float e;
 const uint64_t c = 28222; //random number generated from random.org
 const uint64_t cInv = 1738410520411018574; //inverse number to c in mod p, computed in inverseNum.c
 const uint64_t p = (1ULL << 61) - 1;
@@ -33,14 +34,13 @@ uint64_t mul_mod_mersenne(
 //=============================================================================
 
 // power computes c^k
-uint64_t power (uint64_t a, unsigned int k) {
+uint64_t power(uint64_t a, unsigned int k) {
     uint64_t result = 1;
     for (unsigned int i = 0; i < k; i++) {
         result = mul_mod_mersenne(result, a, 61);
     }
     return result;
 }
-
 
 // hash terminals
 uint64_t fingerprint(uint64_t terminal) {
@@ -173,7 +173,7 @@ void computeIndicesOfExpX(unsigned int X, unsigned int pos) {
 }
 
 //computes hashes of pref and suf blocks
-void hashBlock(float e){
+/* void hashBlock(float e){
     unsigned int sizeText = getSize(sizeRules+offset-1);
     //compute L
     unsigned int sizeL = 1;
@@ -213,11 +213,11 @@ void hashBlock(float e){
         isSufBlock[i].value = sizeText - L[i];
     }
 }
+ */
 
 void readInput(int argc, char **argv) {
     FILE *Pf;
     char fname[1024];
-    char outname[1024];
     fputs("==== Command line:\n", stderr);
     for (int i = 0; i < argc; i++)
     fprintf(stderr, " %s", argv[i]);
@@ -225,7 +225,7 @@ void readInput(int argc, char **argv) {
     if (argc != 3) {
         fprintf(stderr,
                 "Usage: %s <filename> <e>\n"
-                "This scipt constructs index from <filename>.plainslp\n"
+                "This script constructs index from <filename>.plainslp\n"
                 "where e is float from (0,1)\n"
                 "by supporting Karp-Rabin fingerprint queries. \n",
                 argv[0]);
@@ -259,14 +259,14 @@ void readInput(int argc, char **argv) {
     }
 
     //read e
-    float e = atof(argv[2]);
+    e = atof(argv[2]);
     if (e <= 0 || e >= 1) {
         printf("Error! Float e must be between 0 and 1.\n");
         exit(1);
     }
     printf("loaded e : %f\n", e);
 
-    sizeNonTerminal();
+    /* sizeNonTerminal();
     hashNonterminal();
 
     //initialization & computing of array with first occurencies of exp(X) of all terminals and nonterminals
@@ -274,7 +274,7 @@ void readInput(int argc, char **argv) {
     computeIndicesOfExpX(sizeRules + offset-1, 1);
 
 
-    hashBlock(e);
+    hashBlock(e); */
     
 
     ////////// some unit tests //////////
