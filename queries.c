@@ -1,28 +1,67 @@
 #include "grammar.h"
 
+unsigned int *Blocksizes;
 unsigned int *pattern;
 unsigned int sizePattern;
 unsigned int L;
-//THashPair *isPrefBlock;
-//THashPair *isSufBlock;
 
-uint64_t hashPattern() {
-    uint64_t hashOfPattern = 0;
-    for (unsigned int i = 0; i < sizePattern; i++) {
-        hashOfPattern += power(c, i+1) * fingerprint(pattern[i]) % p;
+uint64_t hashPatternBlock(unsigned int start, unsigned int end) {
+    uint64_t hash = 0;
+    for (unsigned int i = start; i <= end; i++) {
+        hash += power(c, i+1) * fingerprint(pattern[i]) % p;
     }
-    return hashOfPattern;
+    return hash;
 }
 
-/* void querying() { TO DO
-    unsigned int Lhalf = L / 2;
+//binary search k that is predecessor in Blocksizes of ⌈L/2⌉ == l
+unsigned int findPredecessor(unsigned int l, unsigned int left, unsigned int right){
+    while (left <= right) {
+        unsigned int pivot = left + (right - left) / 2;
+        //test
+        printf("left: %u pivot: %u right: %u\n", left, pivot, right);
+        if (Blocksizes[pivot] == l) {
+            return pivot;
+        }
+        if (Blocksizes[pivot] < l) {
+            if (Blocksizes[pivot+1] > l) {
+                return pivot;
+            }
+            left = pivot;
+        }
+        else {
+            right = pivot;
+        }
+    }
+}
+
+void querying(unsigned int sizeHashTable) {
+    unsigned int pos = 0;
+    char c;
+    unsigned int l = L / 2;
     if (L % 2 != 0) {
-        Lhalf ++;
+        l ++;
+    }
+    unsigned int k = findPredecessor(l, 0, sizeHashTable-1);
+
+    //test findPredecessor
+    printf("l: %u  k: %u\n", l, k);
+
+    for (unsigned int i = 0; i < sizePattern-k; i++) {
+        if (hashPatternBlock(i, i+k-1) == isPrefBlock[k].key){
+            c = 'l';
+            pos = i+k-1;
+        }
+        if (hashPatternBlock(i, i+k-1) == isSufBlock[k].key){
+            c = 'r';
+            pos = i;
+        }
     }
 
-} */
 
-void readIndexPatternL(int argc, char **argv) {
+
+}
+
+unsigned int readIndexPatternL(int argc, char **argv) {
     FILE *Hf;
     char Hfname[1024];
     fputs("==== Command line: ====\n", stderr);
@@ -47,29 +86,32 @@ void readIndexPatternL(int argc, char **argv) {
         exit(1);
     }
     unsigned int sizeHashTable = 0;
-    unsigned int capacity = 1;
-    THashPair tempBlock;
-    isPrefBlock = malloc(capacity * sizeof(THashPair));
-    while (fread(&(tempBlock.key), sizeof(uint64_t), 1, Hf) == 1 &&
-           fread(&(tempBlock.value), sizeof(unsigned int), 1, Hf) == 1) {
-        // Check if more memory needs to be allocated
-        if (sizeHashTable >= capacity) {
-            capacity *= 2;
-            isPrefBlock = realloc(isPrefBlock, capacity * sizeof(THashPair));
-            if (isPrefBlock == NULL) {
-                fprintf(stderr, "Memory allocation failed\n");
-                fclose(Hf);
-                exit(1);
-            }
-        }
-        // Copy the read data into the dynamically allocated array
-        isPrefBlock[sizeHashTable] = tempBlock;
-        sizeHashTable++;
+    fread(&sizeHashTable, sizeof(unsigned int), 1, Hf);
+    Blocksizes = malloc(sizeHashTable * sizeof(unsigned int));
+    isPrefBlock = malloc(sizeHashTable * sizeof(THashPair));
+    isSufBlock = malloc(sizeHashTable * sizeof(THashPair));
+    for(unsigned int i = 0; i < sizeHashTable; i++){
+        fread(&(Blocksizes[i]), sizeof(unsigned int), 1, Hf);
+    }
+    for(unsigned int i = 0; i < sizeHashTable; i++){
+        fread(&(isPrefBlock[i].key), sizeof(uint64_t), 1, Hf);
+        fread(&(isPrefBlock[i].value), sizeof(unsigned int), 1, Hf);
+    }
+    for(unsigned int i = 0; i < sizeHashTable; i++){
+        fread(&(isSufBlock[i].key), sizeof(uint64_t), 1, Hf);
+        fread(&(isSufBlock[i].value), sizeof(unsigned int), 1, Hf);
     }
 
     //test1 : readHf
-    for (unsigned int i = 0; i < sizeHashTable; i++) {
+    printf("sizeHashTable: %u\n", sizeHashTable);
+    for (unsigned int i = 0; i < sizeHashTable; i++) {        
+        printf("Blocksizes: i: %u  value: %u\n", i, Blocksizes[i]);
+    }
+    for (unsigned int i = 0; i < sizeHashTable; i++) {        
         printf("PrefixB: i: %u  key: %" PRIu64 "  value: %u\n", i, isPrefBlock[i].key, isPrefBlock[i].value);
+    }
+    for (unsigned int i = 0; i < sizeHashTable; i++) {        
+        printf("SufixB: i: %u  key: %" PRIu64 "  value: %u\n", i, isSufBlock[i].key, isSufBlock[i].value);
     }
 
     //read <pattern>.txt file
@@ -118,16 +160,19 @@ void readIndexPatternL(int argc, char **argv) {
 
     fclose(Pf);
     fclose(Hf);
+
+    return sizeHashTable; //size of L Blocks
 }
 
 int main(int argc, char **argv) {
-    readIndexPatternL(argc, argv);
-    uint64_t hashOfPattern = hashPattern();
-    printf("hash of pattern: %" PRIu64 "\n", hashOfPattern);
-    //querying();
+    unsigned int sizeHashTable = readIndexPatternL(argc, argv);
+    
+    querying(sizeHashTable);
 
     free(isPrefBlock);
-    //free(isSufBlock);
+    free(isSufBlock);
     free(pattern);
+    free(Blocksizes);
+
     return 0;
 }

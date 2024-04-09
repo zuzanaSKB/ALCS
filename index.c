@@ -10,7 +10,6 @@ void buildIndex(float e) {
     L = (unsigned int *)malloc(1 * sizeof(unsigned int));
     L[0] = 1;
     printf("hashBlock:\n");
-
     for (unsigned int i = 2; i < sizeText; i++) {
         if (i >= L[sizeL-1]*(1/(1-e))) {
             sizeL ++;
@@ -48,9 +47,17 @@ void buildIndex(float e) {
     strcpy(output, "index");
     strcat(output, ".hashtable"); 
     Hf = fopen(output, "wb");
+    fwrite(&sizeL, sizeof(unsigned int), 1, Hf);
+    for(unsigned int i = 0; i < sizeL; i++){
+        fwrite(&(L[i]), sizeof(unsigned int), 1, Hf);
+    }
     for(unsigned int i = 0; i < sizeL; i++){
         fwrite(&(isPrefBlock[i].key), sizeof(uint64_t), 1, Hf);
         fwrite(&(isPrefBlock[i].value), sizeof(unsigned int), 1, Hf);
+    }
+    for(unsigned int i = 0; i < sizeL; i++){
+        fwrite(&(isSufBlock[i].key), sizeof(uint64_t), 1, Hf);
+        fwrite(&(isSufBlock[i].value), sizeof(unsigned int), 1, Hf);
     }
     
     fclose(Hf);
