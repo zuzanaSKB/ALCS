@@ -137,27 +137,7 @@ uint64_t hashSubstring(unsigned int i, unsigned int j) {
     return mul_mod_mersenne(hashJ - hashI, power(cInv, i-1), 61);
 }
 
-/* 
-//computes all prefix blocks of nonterminal X
-uint64_t * prefixB(float e, unsigned int X) { //given e = <0,1>, nonterminal X
-    uint64_t *hashP; //hashes for prefix block
-
-    //compute k
-    unsigned int maxPref = 0;
-    for (unsigned int k = 0; pow((1/(1-e)), k) < sizeN[X-offset]; k++) {
-        maxPref = (int) pow((1/(1-e)), k);
-    }
-    hashP = (void *)malloc(maxPref * sizeof(uint64_t));
-    for (unsigned int i = 1; i <= maxPref; i++) {
-        hashP[i-1] = recurrentPref(i, X); //save into hashtable later
-        //test purpose
-        printf("prefix of length: %u hash: %" PRIu64 "\n", i, hashP[i-1]);
-    }
-    return hashP;
-}
- */
-
-//returns array of indices of starts of exp(X)
+//returns array of indices of starts of exp(X), where X is terminal or nonterminal
 void computeIndicesOfExpX(unsigned int X, unsigned int pos) {
     if (X < offset) {
         if(indicesOfExpX[X] == 0){
@@ -171,49 +151,6 @@ void computeIndicesOfExpX(unsigned int X, unsigned int pos) {
         computeIndicesOfExpX(R[X-offset].right, pos + getSize(R[X-offset].left));
     }
 }
-
-//computes hashes of pref and suf blocks
-/* void hashBlock(float e){
-    unsigned int sizeText = getSize(sizeRules+offset-1);
-    //compute L
-    unsigned int sizeL = 1;
-    unsigned int *L;
-    L = (unsigned int *)malloc(1 * sizeof(unsigned int));
-    L[0] = 1;
-    printf("hashBlock:\n");
-
-    for (unsigned int i = 2; i < sizeText; i++) {
-        if (i >= L[sizeL-1]*(1/(1-e))) {
-            sizeL ++;
-            L = (unsigned int *)realloc(L, sizeL * sizeof(unsigned int));
-            L[sizeL - 1] = i;
-            printf("L[%u] = %u\n", i, L[sizeL - 1]);
-        }
-    }
-
-    //prefix
-    isPrefBlock = (void *)malloc(sizeL * sizeof(THashPair));
-    for(unsigned int i = 0; i < sizeL; i++){
-
-        //test purpose
-        printf("Prefix: i: %u  L[i]: %u\n", i, L[i]);
-
-        isPrefBlock[i].key = hashSubstring(1, L[i]);
-        isPrefBlock[i].value = 1;
-    }
-
-    //sufix
-    isSufBlock = (void *)malloc(sizeL * sizeof(THashPair));
-    for(unsigned int i = 0; i < sizeL; i++){
-
-        //test purpose
-        printf("Sufix: i: %u  L[i]: %u\n", i, L[i]);
-
-        isSufBlock[i].key = hashSubstring(sizeText - L[i], sizeText-1);
-        isSufBlock[i].value = sizeText - L[i];
-    }
-}
- */
 
 void readInput(int argc, char **argv) {
     FILE *Pf;

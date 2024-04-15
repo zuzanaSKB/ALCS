@@ -19,26 +19,27 @@ void buildIndex(float e) {
         }
     }
 
-    //prefix
-    isPrefBlock = (void *)malloc(sizeL * sizeof(THashPair));
-    for(unsigned int i = 0; i < sizeL; i++){
+    //prefix and sufix blocks
+    isPrefBlock = (void *)malloc(sizeRules * sizeL * sizeof(THashPair));
+    isSufBlock = (void *)malloc(sizeRules * sizeL * sizeof(THashPair));
+    unsigned int isBlocki = 0;
+    for (int x = 0; x < sizeRules; x++) {
+        for(unsigned int i = 0; i < sizeL; i++){
+            //printf("getSize(x+offset): %u  L[i]: %u\n",getSize(x+offset), L[i]);
+            if (getSize(x+offset) >= L[i]) {
+                isPrefBlock[isBlocki].key = hashSubstring(indicesOfExpX[x+offset], indicesOfExpX[x+offset] + L[i] - 1);
+                isPrefBlock[isBlocki].value = indicesOfExpX[x+offset];
 
-        isPrefBlock[i].key = hashSubstring(1, L[i]);
-        isPrefBlock[i].value = 1;
+                isSufBlock[isBlocki].key = hashSubstring(indicesOfExpX[x+offset] + getSize(x+offset) - L[i], indicesOfExpX[x+offset] + getSize(x+offset) - 1);
+                isSufBlock[isBlocki].value = indicesOfExpX[x+offset] + getSize(x+offset) - L[i];
 
-        //test purpose
-        printf("PrefixB: i: %u  L[i]: %u key: %" PRIu64 "\n", i, L[i], isPrefBlock[i].key);
-    }
+                //test purpose
+                printf("isPrefBlock[%u]: key: %" PRIu64 " value: %u\n", isBlocki, isPrefBlock[isBlocki].key, isPrefBlock[isBlocki].value);
+                printf("isSufBlock[%u]: key: %" PRIu64 " value: %u\n", isBlocki, isSufBlock[isBlocki].key, isSufBlock[isBlocki].value);
 
-    //sufix
-    isSufBlock = (void *)malloc(sizeL * sizeof(THashPair));
-    for(unsigned int i = 0; i < sizeL; i++){
-
-        //test purpose
-        printf("Sufix: i: %u  L[i]: %u\n", i, L[i]);
-
-        isSufBlock[i].key = hashSubstring(sizeText - L[i], sizeText-1);
-        isSufBlock[i].value = sizeText - L[i];
+                isBlocki++;
+            }
+        }
     }
 
     ///////////////// save index to disk /////////////////
@@ -51,11 +52,12 @@ void buildIndex(float e) {
     for(unsigned int i = 0; i < sizeL; i++){
         fwrite(&(L[i]), sizeof(unsigned int), 1, Hf);
     }
-    for(unsigned int i = 0; i < sizeL; i++){
+    fwrite(&isBlocki, sizeof(unsigned int), 1, Hf);
+    for(unsigned int i = 0; i < isBlocki; i++){
         fwrite(&(isPrefBlock[i].key), sizeof(uint64_t), 1, Hf);
         fwrite(&(isPrefBlock[i].value), sizeof(unsigned int), 1, Hf);
     }
-    for(unsigned int i = 0; i < sizeL; i++){
+    for(unsigned int i = 0; i < isBlocki; i++){
         fwrite(&(isSufBlock[i].key), sizeof(uint64_t), 1, Hf);
         fwrite(&(isSufBlock[i].value), sizeof(unsigned int), 1, Hf);
     }
@@ -72,6 +74,13 @@ int main(int argc, char **argv) {
     //array with first occurencies of exp(X) of all terminals and nonterminals
     indicesOfExpX = (void *)calloc((sizeRules+offset), sizeof(unsigned int));
     computeIndicesOfExpX(sizeRules + offset-1, 1);
+    //test9: computeIndicesOfExpX
+    printf("test9: computeIndicesOfExpX\n");
+    for(unsigned int i = 0; i < sizeRules+offset; i++) {
+        if(indicesOfExpX[i] != 0) {
+            printf("start of exp(%u) : %u\n", i, indicesOfExpX[i]);
+        }
+    }
 
     buildIndex(e);
     

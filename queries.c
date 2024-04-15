@@ -4,16 +4,17 @@ unsigned int *Blocksizes;
 unsigned int *pattern;
 unsigned int sizePattern;
 unsigned int L;
+unsigned int sizeHashTable;
 
 uint64_t hashPatternBlock(unsigned int start, unsigned int end) {
     uint64_t hash = 0;
     for (unsigned int i = start; i <= end; i++) {
-        hash += power(c, i+1) * fingerprint(pattern[i]) % p;
+        hash += power(c, i) * fingerprint(pattern[i]) % p;
     }
     return hash;
 }
 
-//binary search k that is predecessor in Blocksizes of ⌈L/2⌉ == l
+//binary search, finds k that is predecessor in Blocksizes of ⌈L/2⌉ == l
 unsigned int findPredecessor(unsigned int l, unsigned int left, unsigned int right){
     while (left <= right) {
         unsigned int pivot = left + (right - left) / 2;
@@ -34,30 +35,36 @@ unsigned int findPredecessor(unsigned int l, unsigned int left, unsigned int rig
     }
 }
 
-void querying(unsigned int sizeHashTable) {
+void querying(unsigned int sizeL, FILE *Resf) {
     unsigned int pos = 0;
     char c;
     unsigned int l = L / 2;
     if (L % 2 != 0) {
         l ++;
     }
-    unsigned int k = findPredecessor(l, 0, sizeHashTable-1);
+    unsigned int k = findPredecessor(l, 0, sizeL-1);
 
     //test findPredecessor
     printf("l: %u  k: %u\n", l, k);
 
-    for (unsigned int i = 0; i < sizePattern-k; i++) {
-        if (hashPatternBlock(i, i+k-1) == isPrefBlock[k].key){
+    uint64_t hash1ToK = hashPatternBlock(0, k-1);
+    printf("hash1ToK: %" PRIu64 "\n", hash1ToK);
+    for (unsigned int b = 0; b < sizeHashTable; b++) {
+        if (hash1ToK == isPrefBlock[b].key) {
             c = 'l';
-            pos = i+k-1;
+            pos = k-1;
+            fprintf(Resf, "%c %u\n", c, pos);
         }
-        if (hashPatternBlock(i, i+k-1) == isSufBlock[k].key){
+        if (hash1ToK == isSufBlock[b].key) {
             c = 'r';
-            pos = i;
+            pos = 0;
+            fprintf(Resf, "%c %u\n", c, pos);
         }
     }
+    
+    /* for (int i = 0; i < sizePattern-k; i++) {
 
-
+    } */
 
 }
 
@@ -85,14 +92,16 @@ unsigned int readIndexPatternL(int argc, char **argv) {
         fprintf(stderr, "Error: cannot open file %s for reading\n", Hfname);
         exit(1);
     }
-    unsigned int sizeHashTable = 0;
-    fread(&sizeHashTable, sizeof(unsigned int), 1, Hf);
-    Blocksizes = malloc(sizeHashTable * sizeof(unsigned int));
-    isPrefBlock = malloc(sizeHashTable * sizeof(THashPair));
-    isSufBlock = malloc(sizeHashTable * sizeof(THashPair));
-    for(unsigned int i = 0; i < sizeHashTable; i++){
+    unsigned int sizeL = 0;
+    fread(&sizeL, sizeof(unsigned int), 1, Hf);
+    Blocksizes = malloc(sizeL * sizeof(unsigned int));
+    for(unsigned int i = 0; i < sizeL; i++){
         fread(&(Blocksizes[i]), sizeof(unsigned int), 1, Hf);
     }
+    sizeHashTable = 0;
+    fread(&sizeHashTable, sizeof(unsigned int), 1, Hf);
+    isPrefBlock = malloc(sizeHashTable * sizeof(THashPair));
+    isSufBlock = malloc(sizeHashTable * sizeof(THashPair));
     for(unsigned int i = 0; i < sizeHashTable; i++){
         fread(&(isPrefBlock[i].key), sizeof(uint64_t), 1, Hf);
         fread(&(isPrefBlock[i].value), sizeof(unsigned int), 1, Hf);
@@ -103,10 +112,11 @@ unsigned int readIndexPatternL(int argc, char **argv) {
     }
 
     //test1 : readHf
-    printf("sizeHashTable: %u\n", sizeHashTable);
-    for (unsigned int i = 0; i < sizeHashTable; i++) {        
+    printf("sizeL: %u\n", sizeL);
+    for (unsigned int i = 0; i < sizeL; i++) {        
         printf("Blocksizes: i: %u  value: %u\n", i, Blocksizes[i]);
     }
+    printf("sizeHashTable: %u\n", sizeHashTable);
     for (unsigned int i = 0; i < sizeHashTable; i++) {        
         printf("PrefixB: i: %u  key: %" PRIu64 "  value: %u\n", i, isPrefBlock[i].key, isPrefBlock[i].value);
     }
@@ -161,13 +171,17 @@ unsigned int readIndexPatternL(int argc, char **argv) {
     fclose(Pf);
     fclose(Hf);
 
-    return sizeHashTable; //size of L Blocks
+    return sizeL; //size of L Blocks
 }
 
 int main(int argc, char **argv) {
-    unsigned int sizeHashTable = readIndexPatternL(argc, argv);
+    unsigned int sizeL = readIndexPatternL(argc, argv);
+    FILE *Resf;
+    Resf = fopen("ResF.txt", "w");
     
-    querying(sizeHashTable);
+    querying(sizeL, Resf);
+
+    fclose(Resf);
 
     free(isPrefBlock);
     free(isSufBlock);
