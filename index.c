@@ -23,9 +23,12 @@ void buildIndex(float e) {
     isPrefBlock = (void *)malloc(sizeRules * sizeL * sizeof(THashPair));
     isSufBlock = (void *)malloc(sizeRules * sizeL * sizeof(THashPair));
     unsigned int isBlocki = 0;
+    int skip = 0;
     for (int x = 0; x < sizeRules; x++) {
-        for(unsigned int i = 0; i < sizeL; i++){
+        skip = 0;
+        for(unsigned int i = 0; i < sizeL && !skip; i++){
             //printf("getSize(x+offset): %u  L[i]: %u\n",getSize(x+offset), L[i]);
+            //printf("i: %u\n", i);
             if (getSize(x+offset) >= L[i]) {
                 isPrefBlock[isBlocki].key = hashSubstring(indicesOfExpX[x+offset], indicesOfExpX[x+offset] + L[i] - 1);
                 isPrefBlock[isBlocki].value = indicesOfExpX[x+offset];
@@ -34,12 +37,16 @@ void buildIndex(float e) {
                 isSufBlock[isBlocki].value = indicesOfExpX[x+offset] + getSize(x+offset) - L[i];
 
                 //test purpose
-                printf("isPrefBlock[%u]: key: %" PRIu64 " value: %u\n", isBlocki, isPrefBlock[isBlocki].key, isPrefBlock[isBlocki].value);
-                printf("isSufBlock[%u]: key: %" PRIu64 " value: %u\n", isBlocki, isSufBlock[isBlocki].key, isSufBlock[isBlocki].value);
+                //printf("isPrefBlock[%u]: key: %" PRIu64 " value: %u\n", isBlocki, isPrefBlock[isBlocki].key, isPrefBlock[isBlocki].value);
+                //printf("isSufBlock[%u]: key: %" PRIu64 " value: %u\n", isBlocki, isSufBlock[isBlocki].key, isSufBlock[isBlocki].value);
 
                 isBlocki++;
+            } else {
+                skip = 1;
             }
         }
+        //test
+        printf("processed %u of %u\n", (x+1)*sizeL, sizeRules*sizeL);
     }
 
     ///////////////// save index to disk /////////////////
@@ -75,13 +82,15 @@ int main(int argc, char **argv) {
     indicesOfExpX = (void *)calloc((sizeRules+offset), sizeof(unsigned int));
     computeIndicesOfExpX(sizeRules + offset-1, 1);
     //test9: computeIndicesOfExpX
-    printf("test9: computeIndicesOfExpX\n");
+    FILE *Lf;
+    Lf = fopen("logfile.txt", "w");
+    fprintf(Lf, "test9: computeIndicesOfExpX\n");
     for(unsigned int i = 0; i < sizeRules+offset; i++) {
         if(indicesOfExpX[i] != 0) {
-            printf("start of exp(%u) : %u\n", i, indicesOfExpX[i]);
+            fprintf(Lf, "start of exp(%u) : %u\n", i, indicesOfExpX[i]);
         }
     }
-
+    fclose(Lf);
     buildIndex(e);
     
     //free memory
