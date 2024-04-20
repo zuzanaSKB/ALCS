@@ -15,7 +15,12 @@ const uint64_t p = (1ULL << 61) - 1;
 const unsigned int offset = 256;
 
 //=============================================================================
-//function mul_mod_mersenne is from https://github.com/dominikkempa/lz77-to-slp/blob/main/src/karp_rabin_hashing.cpp#L55
+//functions mul_mod_mersenne, pow_mod_mersenne and mod_mersenne are from 
+//https://github.com/dominikkempa/lz77-to-slp/blob/main/src/karp_rabin_hashing.cpp#L55
+//=============================================================================
+// Return (a * b) mod p, where p = (2^k) - 1.
+// Requires a, b <= 2^k. Tested for k = 1, .., 63.
+//=============================================================================
 uint64_t mul_mod_mersenne(
     const uint64_t a,
     const uint64_t b,
@@ -32,14 +37,51 @@ uint64_t mul_mod_mersenne(
 }
 
 //=============================================================================
+uint64_t mod_mersenne(
+    uint64_t a,
+    const uint64_t k) {
+  uint64_t p = ((uint64_t)1 << k) - 1;
+  if (k < 32) {
+
+    // We need to check if a <= 2^(2k).
+    const uint64_t threshold = ((uint64_t)1 << (k << 1));
+    if (a <= threshold) {
+      a = (a & p) + (a >> k);
+      a = (a & p) + (a >> k);
+      return a == p ? 0 : a;
+    } else return a % p;
+  } else {
+
+    // We are guaranteed that a < 2^(2k)
+    // because a < 2^64 <= 2^(2k).
+    a = (a & p) + (a >> k);
+    a = (a & p) + (a >> k);
+    return a == p ? 0 : a;
+  }
+}
+
+//=============================================================================
+// Return (a^n) mod p, where p = (2^k) - 1.
+//=============================================================================
+uint64_t  pow_mod_mersenne(
+    const uint64_t a,
+    uint64_t n,
+    const uint64_t k) {
+  uint64_t pow = mod_mersenne(a, k);
+  uint64_t ret = mod_mersenne(1, k);
+  while (n > 0) {
+    if (n & 1)
+      ret = mul_mod_mersenne(ret, pow, k);
+    pow = mul_mod_mersenne(pow, pow, k);
+    n >>= 1;
+  }
+  return ret;
+}
+//=============================================================================
 
 // power computes c^k
 uint64_t power(uint64_t a, unsigned int k) {
-    uint64_t result = 1;
-    for (unsigned int i = 0; i < k; i++) {
-        result = mul_mod_mersenne(result, a, 61);
-    }
-    return result;
+    return pow_mod_mersenne(a, k, 61);
 }
 
 // hash terminals
@@ -137,7 +179,7 @@ uint64_t hashSubstring(unsigned int i, unsigned int j) {
     return mul_mod_mersenne(hashJ - hashI, power(cInv, i-1), 61);
 }
 
-//returns array of indices of starts of exp(X), where X is terminal or nonterminal
+//computes array of indices of starts of exp(X), where X is terminal or nonterminal
 void computeIndicesOfExpX(unsigned int X, unsigned int pos) {
     if (X < offset) {
         if(indicesOfExpX[X] == 0){

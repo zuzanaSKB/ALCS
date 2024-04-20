@@ -23,26 +23,28 @@ void buildIndex(float e) {
     isPrefBlock = (void *)malloc(sizeRules * sizeL * sizeof(THashPair));
     isSufBlock = (void *)malloc(sizeRules * sizeL * sizeof(THashPair));
     unsigned int isBlocki = 0;
-    int skip = 0;
     for (int x = 0; x < sizeRules; x++) {
-        skip = 0;
-        for(unsigned int i = 0; i < sizeL && !skip; i++){
+        for(unsigned int i = 0; i < sizeL; i++){
             //printf("getSize(x+offset): %u  L[i]: %u\n",getSize(x+offset), L[i]);
             //printf("i: %u\n", i);
             if (getSize(x+offset) >= L[i]) {
-                isPrefBlock[isBlocki].key = hashSubstring(indicesOfExpX[x+offset], indicesOfExpX[x+offset] + L[i] - 1);
-                isPrefBlock[isBlocki].value = indicesOfExpX[x+offset];
+                if (getSize(R[x].left) >= L[i] && getSize(R[x].right) >= L[i]) {
+                    isPrefBlock[isBlocki].key = hashSubstring(indicesOfExpX[x+offset], indicesOfExpX[x+offset] + L[i] - 1);
+                    isPrefBlock[isBlocki].value = indicesOfExpX[x+offset];
 
-                isSufBlock[isBlocki].key = hashSubstring(indicesOfExpX[x+offset] + getSize(x+offset) - L[i], indicesOfExpX[x+offset] + getSize(x+offset) - 1);
-                isSufBlock[isBlocki].value = indicesOfExpX[x+offset] + getSize(x+offset) - L[i];
+                    isSufBlock[isBlocki].key = hashSubstring(indicesOfExpX[x+offset] + getSize(x+offset) - L[i], indicesOfExpX[x+offset] + getSize(x+offset) - 1);
+                    isSufBlock[isBlocki].value = indicesOfExpX[x+offset] + getSize(x+offset) - L[i];
 
-                //test purpose
-                //printf("isPrefBlock[%u]: key: %" PRIu64 " value: %u\n", isBlocki, isPrefBlock[isBlocki].key, isPrefBlock[isBlocki].value);
-                //printf("isSufBlock[%u]: key: %" PRIu64 " value: %u\n", isBlocki, isSufBlock[isBlocki].key, isSufBlock[isBlocki].value);
+                    //test purpose
+                    //printf("isPrefBlock[%u]: key: %" PRIu64 " value: %u\n", isBlocki, isPrefBlock[isBlocki].key, isPrefBlock[isBlocki].value);
+                    //printf("isSufBlock[%u]: key: %" PRIu64 " value: %u\n", isBlocki, isSufBlock[isBlocki].key, isSufBlock[isBlocki].value);
 
-                isBlocki++;
+                    isBlocki++;
+                } else {
+                    break;
+                }            
             } else {
-                skip = 1;
+                break;
             }
         }
         //test
@@ -92,7 +94,7 @@ int main(int argc, char **argv) {
     }
     fclose(Lf);
     buildIndex(e);
-    
+     
     //free memory
     free(R);
     free(isPrefBlock);
