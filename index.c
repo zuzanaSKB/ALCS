@@ -22,27 +22,36 @@ void buildIndex(float e) {
     //prefix and sufix blocks
     isPrefBlock = (void *)malloc(sizeRules * sizeL * sizeof(THashPair));
     isSufBlock = (void *)malloc(sizeRules * sizeL * sizeof(THashPair));
-    unsigned int isBlocki = 0;
+    unsigned int isPrefBlocki = 0;
+    unsigned int isSufBlocki = 0;
     for (int x = 0; x < sizeRules; x++) {
+        unsigned int x_size = getSize(x+offset);
+        unsigned int l_size = getSize(R[x].left);
+        unsigned int r_size = getSize(R[x].right);
         for(unsigned int i = 0; i < sizeL; i++){
             //printf("getSize(x+offset): %u  L[i]: %u\n",getSize(x+offset), L[i]);
             //printf("i: %u\n", i);
-            if (getSize(x+offset) >= L[i]) {
-                if (getSize(R[x].left) >= L[i] && getSize(R[x].right) >= L[i]) {
-                    isPrefBlock[isBlocki].key = hashSubstring(indicesOfExpX[x+offset], indicesOfExpX[x+offset] + L[i] - 1);
-                    isPrefBlock[isBlocki].value = indicesOfExpX[x+offset];
+            if (x_size >= L[i]) {
+                if (l_size < L[i]) {
+                    isPrefBlock[isPrefBlocki].key = hashSubstring(indicesOfExpX[x+offset], indicesOfExpX[x+offset] + L[i] - 1);
+                    isPrefBlock[isPrefBlocki].value = indicesOfExpX[x+offset];
+                    
+                    //test purpose
+                    //printf("i: %u  j: %u  hash:%" PRIu64 "\n", indicesOfExpX[x+offset], indicesOfExpX[x+offset] + L[i] - 1, isPrefBlock[isPrefBlocki].key);
+                    //printf("isPrefBlock[%u]: key: %" PRIu64 " value: %u\n", isPrefBlocki, isPrefBlock[isPrefBlocki].key, isPrefBlock[isPrefBlocki].value);
 
-                    isSufBlock[isBlocki].key = hashSubstring(indicesOfExpX[x+offset] + getSize(x+offset) - L[i], indicesOfExpX[x+offset] + getSize(x+offset) - 1);
-                    isSufBlock[isBlocki].value = indicesOfExpX[x+offset] + getSize(x+offset) - L[i];
+                    isPrefBlocki++; 
+                }
+                if(r_size < L[i]) {
+                    isSufBlock[isSufBlocki].key = hashSubstring(indicesOfExpX[x+offset] + getSize(x+offset) - L[i], indicesOfExpX[x+offset] + getSize(x+offset) - 1);
+                    isSufBlock[isSufBlocki].value = indicesOfExpX[x+offset] + getSize(x+offset) - L[i];
 
                     //test purpose
-                    //printf("isPrefBlock[%u]: key: %" PRIu64 " value: %u\n", isBlocki, isPrefBlock[isBlocki].key, isPrefBlock[isBlocki].value);
-                    //printf("isSufBlock[%u]: key: %" PRIu64 " value: %u\n", isBlocki, isSufBlock[isBlocki].key, isSufBlock[isBlocki].value);
+                    //printf("isSufBlock[%u]: key: %" PRIu64 " value: %u\n", isSufBlocki, isSufBlock[isSufBlocki].key, isSufBlock[isSufBlocki].value);
 
-                    isBlocki++;
-                } else {
-                    break;
-                }            
+                    isSufBlocki++; 
+                }
+                              
             } else {
                 break;
             }
@@ -61,12 +70,13 @@ void buildIndex(float e) {
     for(unsigned int i = 0; i < sizeL; i++){
         fwrite(&(L[i]), sizeof(unsigned int), 1, Hf);
     }
-    fwrite(&isBlocki, sizeof(unsigned int), 1, Hf);
-    for(unsigned int i = 0; i < isBlocki; i++){
+    fwrite(&isPrefBlocki, sizeof(unsigned int), 1, Hf);
+    fwrite(&isSufBlocki, sizeof(unsigned int), 1, Hf);
+    for(unsigned int i = 0; i < isPrefBlocki; i++){
         fwrite(&(isPrefBlock[i].key), sizeof(uint64_t), 1, Hf);
         fwrite(&(isPrefBlock[i].value), sizeof(unsigned int), 1, Hf);
     }
-    for(unsigned int i = 0; i < isBlocki; i++){
+    for(unsigned int i = 0; i < isSufBlocki; i++){
         fwrite(&(isSufBlock[i].key), sizeof(uint64_t), 1, Hf);
         fwrite(&(isSufBlock[i].value), sizeof(unsigned int), 1, Hf);
     }
@@ -80,6 +90,7 @@ int main(int argc, char **argv) {
     readInput(argc,argv); 
     sizeNonTerminal();
     hashNonterminal();
+    
     //array with first occurencies of exp(X) of all terminals and nonterminals
     indicesOfExpX = (void *)calloc((sizeRules+offset), sizeof(unsigned int));
     computeIndicesOfExpX(sizeRules + offset-1, 1);

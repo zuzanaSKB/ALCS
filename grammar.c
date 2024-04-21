@@ -89,22 +89,6 @@ uint64_t fingerprint(uint64_t terminal) {
     return terminal * c % p;
 }
 
-unsigned int getSize(unsigned int X) {
-    if (X < offset) {
-        return 1;
-    } else {
-        return sizeN[X-offset];
-    }
-}
-
-uint64_t getHash (unsigned int X) {
-    if (X < offset) {
-        return fingerprint(X);
-    } else {
-        return getHash(R[X-offset].left) + power(c, getSize(R[X-offset].left)) * getHash(R[X-offset].right) % p;
-    }
-}
-
 void sizeNonTerminal () { //computes size of all nonterminals and store it to sizeN
     sizeN = (void *)malloc(sizeRules * sizeof(unsigned int));
     for (unsigned int i = 0; i < sizeRules; i++) { 
@@ -117,12 +101,41 @@ void sizeNonTerminal () { //computes size of all nonterminals and store it to si
     }
 }
 
+unsigned int getSize(unsigned int X) {
+    if (X < offset) {
+        return 1;
+    } else {
+        return sizeN[X-offset];
+    }
+}
+
+uint64_t getHash (unsigned int X) {
+    if (X < offset) {
+        return fingerprint(X);
+    } else {
+        return hashN[X-offset];
+    }
+}
+
+uint64_t reccurentHash(unsigned int X) {
+    if (X < offset) {
+        return fingerprint(X);
+    } else {
+        //return reccurentHash(R[X-offset].left) + power(c, getSize(R[X-offset].left)) * reccurentHash(R[X-offset].right) % p;
+        return getHash(R[X-offset].left) + power(c, getSize(R[X-offset].left)) * getHash(R[X-offset].right) % p;
+        
+    }
+}
+
 void hashNonterminal() { //computes hashes for all nonterminals
     hashN = (void *)malloc(sizeRules * sizeof(uint64_t));
     for (unsigned int i = 0; i < sizeRules; i++) {
-        hashN[i] = getHash(i+offset);
+        hashN[i] = reccurentHash(i+offset);
+        //test
+        printf("hashed %u of %u\n", i+1, sizeRules);
     }
 }
+
 
 uint64_t concate(unsigned int left, unsigned int right) { // computes hashes for 2 nonterminals or terminals
     //printf("left, right: %" PRIu64 " %" PRIu64 "\n", hashN[left - offset], hashN[right - offset]);
@@ -135,6 +148,8 @@ uint64_t concate(unsigned int left, unsigned int right) { // computes hashes for
 //returns first i hashes of X <=> computes S[1...n]
 uint64_t recurrentPref (unsigned int i, unsigned int X) {
     if (getSize(X) == i) {
+        //test purpose
+        //printf ("getHash(%u): %" PRIu64 "\n", X, getHash(X));
         return getHash(X); 
     }
     //test purposes
@@ -166,7 +181,7 @@ uint64_t hashSubstringToI(unsigned int i) {
 
 //computes hash of S[i..j]
 uint64_t hashSubstring(unsigned int i, unsigned int j) {
-    if (i < 1 || j < 1 || i > sizeN[sizeRules-1] || j > sizeN[sizeRules-1]) {
+    if (i < 1 || j < 1 || i > sizeN[sizeRules-1] || j > sizeN[sizeRules-1] || i > j)     {
         printf("Error! Cannot compute hash of substring, wrong arguments.\n");
         return 0;
     }
@@ -175,6 +190,9 @@ uint64_t hashSubstring(unsigned int i, unsigned int j) {
     }
     uint64_t hashI = hashSubstringToI(i-1); //hash of S[1..i]
     uint64_t hashJ = hashSubstringToI(j); //hash of S[1..j]
+
+    //test purpose
+    //printf("hashtoI: %" PRIu64 "  hashToJ: %" PRIu64 "\n", hashI, hashJ);
     
     return mul_mod_mersenne(hashJ - hashI, power(cInv, i-1), 61);
 }
@@ -245,6 +263,7 @@ void readInput(int argc, char **argv) {
     }
     printf("loaded e : %f\n", e);
 
+
     /* sizeNonTerminal();
     hashNonterminal();
 
@@ -285,17 +304,18 @@ void readInput(int argc, char **argv) {
         printf("E stupido!!!\n");
     }
  */
+    //test3: print all hashes of nontermonals
+    /* for (unsigned int i = 1; i <= sizeRules; i++) {
+        printf ("%u %" PRIu64 "\n", i, hashN[i-1]);
+    } */
+
     //test4: getHash
     /* uint64_t h2 = getHash(261);
     if (h2 == hashN[5]) {
         printf("test4 succeeded\n");
     } else {
         printf("E stupido!!!\n");
-    } */
-    
-    //test3: print all hashes of nontermonals
-    /* for (unsigned int i = 1; i <= sizeRules; i++) {
-        printf ("%u %" PRIu64 "\n", i, hashN[i-1]);
+        printf("getHash: %" PRIu64 "  hashN[5]: %" PRIu64 "\n", h2, hashN[5]);
     } */
 
     //test5: prefixB
