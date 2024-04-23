@@ -47,6 +47,10 @@ void querying(unsigned int sizeL, FILE *Resf) {
 
     //test findPredecessor
     printf("l: %u  k: %u\n", l, k);
+    if (k > sizePattern || k <= 0) {
+        printf("Error! Wrong length of k.\n");
+        exit(1);
+    }
 
     uint64_t hashWindow = hashPatternBlock(0, k-1);
     for (int i = 0; i <= sizePattern-k; i++) {
