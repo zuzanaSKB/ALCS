@@ -67,7 +67,7 @@ void querying(unsigned int sizeL, FILE *Resf) {
         }
         hashWindow -= fingerprint(pattern[i]);
         hashWindow *= cInv;
-        hashWindow += power(c, k-1) * fingerprint(pattern[i+k-1]) % p;
+        hashWindow += power(c, k-1) * fingerprint(pattern[i+k]) % p;
     }
     
     
@@ -121,7 +121,7 @@ unsigned int readIndexPatternL(int argc, char **argv) {
     }
 
     //test1 : readHf
-    /* printf("sizeL: %u\n", sizeL);
+    printf("sizeL: %u\n", sizeL);
     for (unsigned int i = 0; i < sizeL; i++) {        
         printf("Blocksizes: i: %u  value: %u\n", i, Blocksizes[i]);
     }
@@ -131,7 +131,7 @@ unsigned int readIndexPatternL(int argc, char **argv) {
     }
     for (unsigned int i = 0; i < sizeSufHashTable; i++) {        
         printf("SufixB: i: %u  key: %" PRIu64 "  value: %u\n", i, isSufBlock[i].key, isSufBlock[i].value);
-    } */
+    }
 
     //read <pattern>.txt file
     FILE *Pf;
