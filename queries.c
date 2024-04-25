@@ -19,8 +19,8 @@ uint64_t hashPatternBlock(unsigned int start, unsigned int end) {
 unsigned int findPredecessor(unsigned int l, unsigned int left, unsigned int right){
     while (left <= right) {
         unsigned int pivot = left + (right - left) / 2;
-        //test
-        printf("left: %u pivot: %u right: %u\n", left, pivot, right);
+        //test purpose
+        //printf("left: %u pivot: %u right: %u\n", left, pivot, right);
         if (Blocksizes[pivot] == l) {
             return pivot;
         }
@@ -47,6 +47,8 @@ void querying(unsigned int sizeL, FILE *Resf) {
 
     //test findPredecessor
     printf("l: %u  k: %u\n", l, k);
+
+    //check length of k
     if (k > sizePattern || k <= 0) {
         printf("Error! Wrong length of k.\n");
         exit(1);
@@ -54,29 +56,34 @@ void querying(unsigned int sizeL, FILE *Resf) {
 
     uint64_t hashWindow = hashPatternBlock(0, k-1);
     for (int i = 0; i <= sizePattern-k; i++) {
-        printf("hashWindow: %" PRIu64 "\n", hashWindow);
+        //test purpose
+        //printf("hashWindow: %" PRIu64 "\n", hashWindow);
+        //if hash of k-window matches prefix hash block -> output l and position of its last character
         for (unsigned int b = 0; b < sizePrefHashTable; b++) {
             if (hashWindow == isPrefBlock[b].key) {
                 c = 'l';
-                pos = k-1;
+                pos = isPrefBlock[b].value + k - 1;
                 fprintf(Resf, "%c %u\n", c, pos);
+                //test purpose
+                printf("%c %u\n", c, pos);
             }
         }
+        //if hash of k-window matches suffix hash block -> output r and position of its first character
         for (unsigned int b = 0; b < sizeSufHashTable; b++) {
             if (hashWindow == isSufBlock[b].key) {
                 c = 'r';
-                pos = 0;
+                pos = isSufBlock[b].value;
                 fprintf(Resf, "%c %u\n", c, pos);
+                //test purpose
+                printf("%c %u\n", c, pos);
             }
         }
+        //sliding window of length k updated in linear time
         hashWindow -= fingerprint(pattern[i]);
-        hashWindow *= cInv;
-        hashWindow += power(c, k-1) * fingerprint(pattern[i+k]) % p;
-    }
-    
-    
-
-
+        hashWindow *= cInv % p;
+        hashWindow += mul_mod_mersenne(power(c, k-1), fingerprint(pattern[i+k]), 61);
+    } 
+    printf("Hash block matches has been written to the result file.\n");
 }
 
 unsigned int readIndexPatternL(int argc, char **argv) {
@@ -123,19 +130,20 @@ unsigned int readIndexPatternL(int argc, char **argv) {
         fread(&(isSufBlock[i].key), sizeof(uint64_t), 1, Hf);
         fread(&(isSufBlock[i].value), sizeof(unsigned int), 1, Hf);
     }
+    printf("Index loaded.\n");
 
-    //test1 : readHf
-    printf("sizeL: %u\n", sizeL);
+    //test1 : readHf - read sizeL, hashtable
+    /* printf("sizeL: %u\n", sizeL);
     for (unsigned int i = 0; i < sizeL; i++) {        
         printf("Blocksizes: i: %u  value: %u\n", i, Blocksizes[i]);
-    }
+    } */
     printf("sizePrefHashTable: %u  sizeSufHashTable: %u\n", sizePrefHashTable, sizeSufHashTable);
-    for (unsigned int i = 0; i < sizePrefHashTable; i++) {        
+    /*for (unsigned int i = 0; i < sizePrefHashTable; i++) {        
         printf("PrefixB: i: %u  key: %" PRIu64 "  value: %u\n", i, isPrefBlock[i].key, isPrefBlock[i].value);
     }
     for (unsigned int i = 0; i < sizeSufHashTable; i++) {        
         printf("SufixB: i: %u  key: %" PRIu64 "  value: %u\n", i, isSufBlock[i].key, isSufBlock[i].value);
-    }
+    } */
 
     //read <pattern>.txt file
     FILE *Pf;
@@ -154,7 +162,7 @@ unsigned int readIndexPatternL(int argc, char **argv) {
     }
     sizePattern--;
     //testpurpose
-    printf("sizePattern: %u\n", sizePattern);
+    //printf("sizeOfPattern: %u\n", sizePattern);
     // rewind file pointer
     rewind(Pf);
     // allocate array of rules
@@ -167,13 +175,13 @@ unsigned int readIndexPatternL(int argc, char **argv) {
         c = fgetc(Pf);
         pattern[i] = c;
     }
-
+    printf("Pattern loaded.\n");
     //test2 : read pattern
-    printf("pattern: \n");
+    /* printf("pattern: \n");
     for (int i = 0; i < sizePattern; i++) {
         printf("%u ", pattern[i]);
     }
-    printf("\n");
+    printf("\n"); */
 
      
     //read L

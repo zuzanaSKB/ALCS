@@ -32,7 +32,9 @@ extern const uint64_t cInv; //inverse number to c according to mod p
 extern const uint64_t p; // fixed prime number
 extern const unsigned int offset;
 
-
+uint64_t mul_mod_mersenne(const uint64_t a, const uint64_t b, const uint64_t k);
+uint64_t mod_mersenne(uint64_t a, const uint64_t k);
+uint64_t  pow_mod_mersenne(const uint64_t a, uint64_t n, const uint64_t k);
 uint64_t fingerprint(uint64_t terminal);
 uint64_t power(uint64_t a, unsigned int k);
 unsigned int getSize(unsigned int X);

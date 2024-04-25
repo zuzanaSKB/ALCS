@@ -17,6 +17,7 @@ const unsigned int offset = 256;
 //=============================================================================
 //functions mul_mod_mersenne, pow_mod_mersenne and mod_mersenne are from 
 //https://github.com/dominikkempa/lz77-to-slp/blob/main/src/karp_rabin_hashing.cpp#L55
+
 //=============================================================================
 // Return (a * b) mod p, where p = (2^k) - 1.
 // Requires a, b <= 2^k. Tested for k = 1, .., 63.
