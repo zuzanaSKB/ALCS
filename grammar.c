@@ -36,8 +36,6 @@ uint64_t mul_mod_mersenne(
   lo = (lo & p) + (lo >> k);
   return lo == p ? 0 : lo;
 }
-
-//=============================================================================
 uint64_t mod_mersenne(
     uint64_t a,
     const uint64_t k) {
@@ -60,7 +58,6 @@ uint64_t mod_mersenne(
     return a == p ? 0 : a;
   }
 }
-
 //=============================================================================
 // Return (a^n) mod p, where p = (2^k) - 1.
 //=============================================================================
@@ -80,14 +77,14 @@ uint64_t  pow_mod_mersenne(
 }
 //=============================================================================
 
-// power computes c^k
+// power computes a^k
 uint64_t power(uint64_t a, unsigned int k) {
     return pow_mod_mersenne(a, k, 61);
 }
 
 // hash terminals
 uint64_t fingerprint(uint64_t terminal) {
-    return terminal * c % p;
+    return (terminal * c) % p;
 }
 
 void sizeNonTerminal () { //computes size of all nonterminals and store it to sizeN
@@ -122,9 +119,12 @@ uint64_t reccurentHash(unsigned int X) {
     if (X < offset) {
         return fingerprint(X);
     } else {
-        //return reccurentHash(R[X-offset].left) + power(c, getSize(R[X-offset].left)) * reccurentHash(R[X-offset].right) % p;
-        return getHash(R[X-offset].left) + power(c, getSize(R[X-offset].left)) * getHash(R[X-offset].right) % p;
+        //return getHash(R[X-offset].left) + power(c, getSize(R[X-offset].left)) * getHash(R[X-offset].right) % p;
         
+        //printf("reccurentH size_left: %u  right: %" PRIu64 "\n", getSize(R[X-offset].left), getHash(R[X-offset].right));
+        //printf("left: %" PRIu64 ", right: %" PRIu64 "\n", getHash(R[X-offset].left), mul_mod_mersenne(power(c, getSize(R[X-offset].left)), getHash(R[X-offset].right), 61));
+        uint64_t right = mul_mod_mersenne(power(c, getSize(R[X-offset].left)), getHash(R[X-offset].right), 61) %p;
+        return (getHash(R[X-offset].left) + right) % p;        
     }
 }
 
@@ -142,7 +142,8 @@ uint64_t concate(unsigned int left, unsigned int right) { // computes hashes for
     //printf("left, right: %" PRIu64 " %" PRIu64 "\n", hashN[left - offset], hashN[right - offset]);
     //printf("power: %" PRIu64 "\n", power(c, sizeN[left - offset]));    
 
-    return getHash(left) + power(c, getSize(left)) * getHash(right) % p;
+    //return getHash(left) + power(c, getSize(left)) * getHash(right) % p;
+    return (getHash(left) + mul_mod_mersenne(power(c, getSize(left)), getHash(right), 61)) % p;
 
 }
 
@@ -166,8 +167,10 @@ uint64_t recurrentPref (unsigned int i, unsigned int X) {
         //return concate(R[X-offset].left, recurrentPref( i- getSize(R[X-offset].left),R[X-offset].right));
 
         //i know this is awful, ... but it works and my brain doesnt work anymore:
-        return getHash(R[X-offset].left) + power(c, getSize(R[X-offset].left)) * 
-                recurrentPref( i- getSize(R[X-offset].left),R[X-offset].right) % p;
+        //return getHash(R[X-offset].left) + power(c, getSize(R[X-offset].left)) * 
+                //recurrentPref( i- getSize(R[X-offset].left),R[X-offset].right) % p;
+        return (getHash(R[X-offset].left) + mul_mod_mersenne(power(c, getSize(R[X-offset].left)),
+                recurrentPref( i- getSize(R[X-offset].left),R[X-offset].right), 61)) % p;
     } 
     if (getSize(R[X-offset].left) > i) {
         //deeper to the left subtree

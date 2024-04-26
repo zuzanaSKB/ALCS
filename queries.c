@@ -9,10 +9,14 @@ unsigned int sizeSufHashTable;
 
 uint64_t hashPatternBlock(unsigned int start, unsigned int end) {
     uint64_t hash = 0;
+    uint64_t hash2 = 0;
     for (unsigned int i = start; i <= end; i++) {
-        hash += power(c, i) * fingerprint(pattern[i]) % p;
+        //hash += power(c, i) * fingerprint(pattern[i]) % p;
+        //printf("left: %" PRIu64 " right: %" PRIu64 "\n", hash2, mul_mod_mersenne( power(c, i), fingerprint(pattern[i]), 61));
+        hash2 = (hash2 + mul_mod_mersenne( power(c, i), fingerprint(pattern[i]), 61)) % p;
     }
-    return hash;
+    //printf("hash: %" PRIu64 " vs hash2: %" PRIu64 "\n", hash, hash2);
+    return hash2 % p;
 }
 
 //binary search, finds k that is predecessor in Blocksizes of ⌈L/2⌉ == l
@@ -43,7 +47,12 @@ void querying(unsigned int sizeL, FILE *Resf) {
     if (L % 2 != 0) {
         l ++;
     }
-    unsigned int k = Blocksizes[findPredecessor(l, 0, sizeL-1)];
+    unsigned int k = 0;
+    if (l > Blocksizes[sizeL-1]) {
+        k = Blocksizes[sizeL-1];
+    } else {
+        k = Blocksizes[findPredecessor(l, 0, sizeL-1)];
+    }
 
     //test findPredecessor
     printf("l: %u  k: %u\n", l, k);
@@ -55,6 +64,10 @@ void querying(unsigned int sizeL, FILE *Resf) {
     }
 
     uint64_t hashWindow = hashPatternBlock(0, k-1);
+    //test purpose
+    //uint64_t hashOfPattern = hashPatternBlock(0, sizePattern-1);
+    //printf("hashOfPattern: %" PRIu64 "\n", hashOfPattern);
+
     for (int i = 0; i <= sizePattern-k; i++) {
         //test purpose
         //printf("hashWindow: %" PRIu64 "\n", hashWindow);
@@ -136,9 +149,9 @@ unsigned int readIndexPatternL(int argc, char **argv) {
     /* printf("sizeL: %u\n", sizeL);
     for (unsigned int i = 0; i < sizeL; i++) {        
         printf("Blocksizes: i: %u  value: %u\n", i, Blocksizes[i]);
-    } */
+    }
     printf("sizePrefHashTable: %u  sizeSufHashTable: %u\n", sizePrefHashTable, sizeSufHashTable);
-    /*for (unsigned int i = 0; i < sizePrefHashTable; i++) {        
+    for (unsigned int i = 0; i < sizePrefHashTable; i++) {        
         printf("PrefixB: i: %u  key: %" PRIu64 "  value: %u\n", i, isPrefBlock[i].key, isPrefBlock[i].value);
     }
     for (unsigned int i = 0; i < sizeSufHashTable; i++) {        
@@ -160,9 +173,7 @@ unsigned int readIndexPatternL(int argc, char **argv) {
     while ((c = fgetc(Pf)) != EOF) {
         sizePattern ++;
     }
-    sizePattern--;
-    //testpurpose
-    //printf("sizeOfPattern: %u\n", sizePattern);
+    //sizePattern--;
     // rewind file pointer
     rewind(Pf);
     // allocate array of rules
@@ -177,11 +188,12 @@ unsigned int readIndexPatternL(int argc, char **argv) {
     }
     printf("Pattern loaded.\n");
     //test2 : read pattern
-    /* printf("pattern: \n");
+    printf("sizeOfPattern: %u\n", sizePattern);
+    printf("pattern: \n");
     for (int i = 0; i < sizePattern; i++) {
         printf("%u ", pattern[i]);
     }
-    printf("\n"); */
+    printf("\n");
 
      
     //read L

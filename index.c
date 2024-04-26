@@ -34,7 +34,9 @@ void buildIndex(float e) {
             //printf("i: %u\n", i);
             if (x_size >= L[i]) {
                 unsigned int startExpX = indicesOfExpX[x+offset];
-                if (l_size < L[i]) {
+                //printf("startExpX: %u\n", startExpX);
+
+                if (l_size <= L[i]) {
                     isPrefBlock[isPrefBlocki].key = hashSubstring(startExpX, startExpX + L[i] - 1);
                     isPrefBlock[isPrefBlocki].value = startExpX;
                     
@@ -44,15 +46,15 @@ void buildIndex(float e) {
 
                     isPrefBlocki++; 
                 }
-                if(r_size < L[i]) {
-                    isSufBlock[isSufBlocki].key = hashSubstring(startExpX + getSize(x+offset) - L[i], startExpX + getSize(x+offset) - 1);
-                    isSufBlock[isSufBlocki].value = startExpX + getSize(x+offset) - L[i];
+                if(r_size <= L[i]) {
+                    isSufBlock[isSufBlocki].key = hashSubstring(startExpX + x_size - L[i], startExpX + x_size - 1);
+                    isSufBlock[isSufBlocki].value = startExpX + x_size - L[i];
 
                     //test purpose
                     //printf("isSufBlock[%u]: key: %" PRIu64 " value: %u\n", isSufBlocki, isSufBlock[isSufBlocki].key, isSufBlock[isSufBlocki].value);
 
                     isSufBlocki++; 
-                } 
+                }
                               
             } else {
                 break;
@@ -108,13 +110,25 @@ int main(int argc, char **argv) {
     readInput(argc,argv); 
     sizeNonTerminal();
     hashNonterminal();
+
+    //test1.5: sizeNonTerminal
+    /* printf ("size of nonterminals: \n");
+    for (unsigned int i = 0; i < sizeRules; i++) {
+        printf ("%u %u\n", i+offset, sizeN[i]);
+    } */
+
+    //test3: print all hashes of nontermonals
+    /* printf ("hashes of nonterminals: \n");
+    for (unsigned int i = 0; i < sizeRules; i++) {
+        printf ("%u %" PRIu64 "\n", i+offset, hashN[i]);
+    } */
     
     //array with first occurencies of exp(X) of all terminals and nonterminals
     indicesOfExpX = (void *)calloc((sizeRules+offset), sizeof(unsigned int));
     computeIndicesOfExpX(sizeRules + offset-1, 1);
     
     //test purpose saved to logfile
-    /* FILE *Lf;
+    FILE *Lf;
     Lf = fopen("logfile.txt", "w");
     fprintf(Lf, "test9: computeIndicesOfExpX\n");
     for(unsigned int i = 0; i < sizeRules+offset; i++) {
@@ -122,7 +136,7 @@ int main(int argc, char **argv) {
             fprintf(Lf, "start of exp(%u) : %u\n", i, indicesOfExpX[i]);
         }
     }
-    fclose(Lf); */
+    fclose(Lf);
     buildIndex(e);
      
     //free memory
