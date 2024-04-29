@@ -5,20 +5,31 @@
 void buildIndex(float e) {
     unsigned int sizeText = getSize(sizeRules+offset-1);
     //compute L
+    FILE *Lf;
+    char logfile [1024];
+    strcpy(logfile, output);
+    strcat(logfile, ".logfile");
+    Lf = fopen(logfile, "w");
     unsigned int sizeL = 1;
     unsigned int *L;
     L = (unsigned int *)malloc(1 * sizeof(unsigned int));
     L[0] = 1;
-    printf("hashBlock:\n");
-    printf("L[0] = 1\n");
+    //printf("hashBlock:\n");
+    //printf("L[0] = 1\n");
+    fprintf(Lf, "hashBlocks:\n");
+    fprintf(Lf, "L[0] = 1\n");
     for (unsigned int i = 2; i < sizeText; i++) {
         if (i >= L[sizeL-1]*(1/(1-e))) {
             sizeL ++;
             L = (unsigned int *)realloc(L, sizeL * sizeof(unsigned int));
             L[sizeL - 1] = i;
-            printf("L[%u] = %u\n", sizeL-1, L[sizeL - 1]);
+            //printf("L[%u] = %u\n", sizeL-1, L[sizeL - 1]);
+            fprintf(Lf, "L[%u] = %u\n", sizeL-1, L[sizeL - 1]);
+
         }
     }
+    fprintf(Lf, "number of blocks: %u", sizeL);
+    fclose(Lf);
 
     //prefix and sufix blocks
     isPrefBlock = (void *)malloc(sizeRules * sizeL * sizeof(THashPair));
@@ -68,12 +79,12 @@ void buildIndex(float e) {
     FILE *Hf;
     //test purpose
     FILE *Tf;
-    char output[1024];
-    strcpy(output, "index");
-    strcat(output, ".hashtable"); 
+    //strcpy(output, "index");
+    strcat(output, ".hashtable");
     Hf = fopen(output, "wb");
     //test purpose
-    Tf = fopen("index.txt", "w");
+    strcat(output, ".txt");
+    Tf = fopen(output, "w");
     fwrite(&sizeL, sizeof(unsigned int), 1, Hf);
     for(unsigned int i = 0; i < sizeL; i++){
         fwrite(&(L[i]), sizeof(unsigned int), 1, Hf);
@@ -126,9 +137,10 @@ int main(int argc, char **argv) {
     //array with first occurencies of exp(X) of all terminals and nonterminals
     indicesOfExpX = (void *)calloc((sizeRules+offset), sizeof(unsigned int));
     computeIndicesOfExpX(sizeRules + offset-1, 1);
+    buildIndex(e);
     
     //test purpose saved to logfile
-    FILE *Lf;
+    /* FILE *Lf;
     Lf = fopen("logfile.txt", "w");
     fprintf(Lf, "test9: computeIndicesOfExpX\n");
     for(unsigned int i = 0; i < sizeRules+offset; i++) {
@@ -136,8 +148,8 @@ int main(int argc, char **argv) {
             fprintf(Lf, "start of exp(%u) : %u\n", i, indicesOfExpX[i]);
         }
     }
-    fclose(Lf);
-    buildIndex(e);
+    fclose(Lf); */
+    
      
     //free memory
     free(R);

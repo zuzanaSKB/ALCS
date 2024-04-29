@@ -18,6 +18,7 @@ typedef struct {
     unsigned int value; 
 } THashPair;
 
+extern char output[1024];
 extern Tpair *R; // rules
 extern THashPair *isPrefBlock;
 extern THashPair *isSufBlock;

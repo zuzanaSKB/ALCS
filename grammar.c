@@ -1,5 +1,6 @@
 #include "grammar.h"
 
+char output[1024];
 Tpair *R;
 THashPair *isPrefBlock;
 THashPair *isSufBlock;
@@ -236,7 +237,8 @@ void readInput(int argc, char **argv) {
 
     // read .plainslp file
     strcpy(fname, argv[1]);
-    strcat(fname, ".plainslp"); 
+    strcat(fname, ".plainslp");
+    strcpy(output, argv[1]);
     Pf = fopen(fname, "r");
     if (Pf == NULL) {
         fprintf(stderr, "Error: cannot open file %s for reading\n", fname);

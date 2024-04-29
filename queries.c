@@ -68,9 +68,10 @@ void querying(unsigned int sizeL, FILE *Resf) {
     //uint64_t hashOfPattern = hashPatternBlock(0, sizePattern-1);
     //printf("hashOfPattern: %" PRIu64 "\n", hashOfPattern);
 
-    for (int i = 0; i <= sizePattern-k; i++) {
+    for (int i = 0; i < sizePattern-k; i++) {
         //test purpose
-        //printf("hashWindow: %" PRIu64 "\n", hashWindow);
+        printf("PATTERN i: %u of :%u\n", i, sizePattern-k);
+        printf("hashWindow: %" PRIu64 "\n", hashWindow);
         //if hash of k-window matches prefix hash block -> output l and position of its last character
         for (unsigned int b = 0; b < sizePrefHashTable; b++) {
             if (hashWindow == isPrefBlock[b].key) {
@@ -92,9 +93,9 @@ void querying(unsigned int sizeL, FILE *Resf) {
             }
         }
         //sliding window of length k updated in linear time
-        hashWindow -= fingerprint(pattern[i]);
-        hashWindow *= cInv % p;
-        hashWindow += mul_mod_mersenne(power(c, k-1), fingerprint(pattern[i+k]), 61);
+        hashWindow = (hashWindow - fingerprint(pattern[i])) % p;
+        hashWindow = mul_mod_mersenne(hashWindow, cInv, 61);
+        hashWindow = (hashWindow + mul_mod_mersenne(power(c, k-1), fingerprint(pattern[i+k]), 61)) % p;
     } 
     printf("Hash block matches has been written to the result file.\n");
 }
@@ -188,12 +189,12 @@ unsigned int readIndexPatternL(int argc, char **argv) {
     }
     printf("Pattern loaded.\n");
     //test2 : read pattern
-    printf("sizeOfPattern: %u\n", sizePattern);
+    /* printf("sizeOfPattern: %u\n", sizePattern);
     printf("pattern: \n");
     for (int i = 0; i < sizePattern; i++) {
         printf("%u ", pattern[i]);
     }
-    printf("\n");
+    printf("\n"); */
 
      
     //read L
@@ -210,7 +211,10 @@ unsigned int readIndexPatternL(int argc, char **argv) {
 int main(int argc, char **argv) {
     unsigned int sizeL = readIndexPatternL(argc, argv);
     FILE *Resf;
-    Resf = fopen("ResF.txt", "w");
+    char resfname[1024];
+    strcpy(resfname, argv[2]);
+    strcat(resfname, ".resf");
+    Resf = fopen(resfname, "w");
     
     querying(sizeL, Resf);
 
