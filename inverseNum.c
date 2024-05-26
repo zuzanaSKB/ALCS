@@ -1,5 +1,5 @@
-//you can compile this code as "gcc inverseNum.c -o inverseNum -lgmp"
-
+// you can compile this code as "gcc inverseNum.c -o inverseNum -lgmp"
+// this code computes inserse number for c in mod p
 
 #include <stdio.h>
 #include <gmp.h>
@@ -11,7 +11,6 @@ int main() {
     mpz_init(inverse);
     mpz_init(mul);
 
-    // Set c and p to the desired values
     mpz_set_ui(c, 28222);
     mpz_set_str(p, "2305843009213693951", 10);
 
@@ -38,7 +37,6 @@ int main() {
     
 
 
-    // Free the memory used by the variables
     mpz_clear(c);
     mpz_clear(p);
     mpz_clear(inverse);

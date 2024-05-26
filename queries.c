@@ -11,11 +11,8 @@ uint64_t hashPatternBlock(unsigned int start, unsigned int end) {
     uint64_t hash = 0;
     uint64_t hash2 = 0;
     for (unsigned int i = start; i <= end; i++) {
-        //hash += power(c, i) * fingerprint(pattern[i]) % p;
-        //printf("left: %" PRIu64 " right: %" PRIu64 "\n", hash2, mul_mod_mersenne( power(c, i), fingerprint(pattern[i]), 61));
         hash2 = (hash2 + mul_mod_mersenne( power(c, i), fingerprint(pattern[i]), 61)) % p;
     }
-    //printf("hash: %" PRIu64 " vs hash2: %" PRIu64 "\n", hash, hash2);
     return hash2 % p;
 }
 
@@ -23,8 +20,6 @@ uint64_t hashPatternBlock(unsigned int start, unsigned int end) {
 unsigned int findPredecessor(unsigned int l, unsigned int left, unsigned int right){
     while (left <= right) {
         unsigned int pivot = left + (right - left) / 2;
-        //test purpose
-        //printf("left: %u pivot: %u right: %u\n", left, pivot, right);
         if (Blocksizes[pivot] == l) {
             return pivot;
         }
@@ -55,7 +50,7 @@ void querying(unsigned int sizeL, FILE *Resf) {
     }
 
     //test findPredecessor
-    printf("l: %u  k: %u\n", l, k);
+    //printf("l: %u  k: %u\n", l, k);
 
     //check length of k
     if (k > sizePattern || k <= 0) {
@@ -64,32 +59,25 @@ void querying(unsigned int sizeL, FILE *Resf) {
     }
 
     uint64_t hashWindow = hashPatternBlock(0, k-1);
-    //test purpose
-    //uint64_t hashOfPattern = hashPatternBlock(0, sizePattern-1);
-    //printf("hashOfPattern: %" PRIu64 "\n", hashOfPattern);
-
+    unsigned int finded = 0;
     for (int i = 0; i < sizePattern-k; i++) {
         //test purpose
         printf("PATTERN i: %u of :%u\n", i, sizePattern-k);
-        printf("hashWindow: %" PRIu64 "\n", hashWindow);
-        //if hash of k-window matches prefix hash block -> output l and position of its last character
         for (unsigned int b = 0; b < sizePrefHashTable; b++) {
             if (hashWindow == isPrefBlock[b].key) {
                 c = 'l';
                 pos = isPrefBlock[b].value + k - 1;
                 fprintf(Resf, "%c %u\n", c, pos);
-                //test purpose
-                printf("%c %u\n", c, pos);
+                finded++;
             }
         }
-        //if hash of k-window matches suffix hash block -> output r and position of its first character
+        
         for (unsigned int b = 0; b < sizeSufHashTable; b++) {
             if (hashWindow == isSufBlock[b].key) {
                 c = 'r';
                 pos = isSufBlock[b].value;
                 fprintf(Resf, "%c %u\n", c, pos);
-                //test purpose
-                printf("%c %u\n", c, pos);
+                finded++;
             }
         }
         //sliding window of length k updated in linear time
@@ -98,6 +86,7 @@ void querying(unsigned int sizeL, FILE *Resf) {
         hashWindow = (hashWindow + mul_mod_mersenne(power(c, k-1), fingerprint(pattern[i+k]), 61)) % p;
     } 
     printf("Hash block matches has been written to the result file.\n");
+    printf("finded: %u\n", finded);
 }
 
 unsigned int readIndexPatternL(int argc, char **argv) {
@@ -146,6 +135,7 @@ unsigned int readIndexPatternL(int argc, char **argv) {
     }
     printf("Index loaded.\n");
 
+    ////////// some unit tests //////////
     //test1 : readHf - read sizeL, hashtable
     /* printf("sizeL: %u\n", sizeL);
     for (unsigned int i = 0; i < sizeL; i++) {        
@@ -174,7 +164,6 @@ unsigned int readIndexPatternL(int argc, char **argv) {
     while ((c = fgetc(Pf)) != EOF) {
         sizePattern ++;
     }
-    //sizePattern--;
     // rewind file pointer
     rewind(Pf);
     // allocate array of rules
